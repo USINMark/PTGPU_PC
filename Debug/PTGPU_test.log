@@ -1,0 +1,60 @@
+﻿  stdafx.cpp
+c1xx : warning C4199: C++/CLI, C++/CX 또는 OpenMP에서는 2단계 이름 조회가 지원되지 않습니다. /Zc:twoPhase-를 사용하세요.
+cl : 명령줄 warning D9030: '/Gm'이(가) 다중 처리와 호환되지 않습니다. /MP 스위치를 무시합니다.
+  smallptGPU.cpp
+c1xx : warning C4199: C++/CLI, C++/CX 또는 OpenMP에서는 2단계 이름 조회가 지원되지 않습니다. /Zc:twoPhase-를 사용하세요.
+c:\github\ptgpu_pc\ptgpu_test\kdnode.h(66): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+c:\github\ptgpu_pc\ptgpu_test\include\geomfunc.h(115): warning C4244: '=': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\include\geomfunc.h(119): warning C4244: '=': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\include\geomfunc.h(122): warning C4244: '=': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\include\geomfunc.h(149): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\include\geomfunc.h(330): warning C4244: '=': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\smallptgpu.cpp(1335): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+c:\github\ptgpu_pc\ptgpu_test\smallptgpu.cpp(1393): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+  KDNode.cpp
+c1xx : warning C4199: C++/CLI, C++/CX 또는 OpenMP에서는 2단계 이름 조회가 지원되지 않습니다. /Zc:twoPhase-를 사용하세요.
+c:\github\ptgpu_pc\ptgpu_test\kdnode.h(66): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+c:\github\ptgpu_pc\ptgpu_test\kdnode.cpp(126): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+c:\github\ptgpu_pc\ptgpu_test\kdnode.cpp(141): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\kdnode.cpp(146): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+c:\github\ptgpu_pc\ptgpu_test\kdnode.cpp(161): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+c:\github\ptgpu_pc\ptgpu_test\kdnode.cpp(182): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+c:\github\ptgpu_pc\ptgpu_test\kdnode.cpp(212): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+c:\github\ptgpu_pc\ptgpu_test\kdnode.cpp(227): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\kdnode.cpp(278): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  displayfunc.cpp
+c1xx : warning C4199: C++/CLI, C++/CX 또는 OpenMP에서는 2단계 이름 조회가 지원되지 않습니다. /Zc:twoPhase-를 사용하세요.
+c:\github\ptgpu_pc\ptgpu_test\displayfunc.cpp(408): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\displayfunc.cpp(411): warning C4305: '초기화 중': 'double'에서 'float'(으)로 잘립니다.
+c:\github\ptgpu_pc\ptgpu_test\displayfunc.cpp(413): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\displayfunc.cpp(417): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  CLBVH.cpp
+c1xx : warning C4199: C++/CLI, C++/CX 또는 OpenMP에서는 2단계 이름 조회가 지원되지 않습니다. /Zc:twoPhase-를 사용하세요.
+c:\github\ptgpu_pc\ptgpu_test\clbvh.cpp(388): warning C4101: 'status' :참조되지 않은 지역 변수입니다.
+  코드를 생성하고 있습니다...
+  plyfile.c
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(203): warning C4101: 'elem' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(201): warning C4101: 'i' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(405): warning C4101: 'i' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(407): warning C4101: 'prop' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(527): warning C4101: 'i' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(752): warning C4244: '=': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(1233): warning C4101: 'num_elems' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(1419): warning C4101: 'i' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(1492): warning C4101: 'i' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(1614): warning C4101: 'i' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(1758): warning C4101: 'j' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(1758): warning C4101: 'i' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(1958): warning C4244: '=': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(2150): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(2151): warning C4244: '=': 'double'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(2155): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(2156): warning C4244: '=': 'double'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(2235): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(2236): warning C4244: '=': 'double'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(2241): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(2242): warning C4244: '=': 'double'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(2366): warning C4244: '=': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(2450): warning C4101: 'count_type' :참조되지 않은 지역 변수입니다.
+c:\github\ptgpu_pc\ptgpu_test\plyfile.c(2449): warning C4101: 'prop_type' :참조되지 않은 지역 변수입니다.
+  PTGPU_test.vcxproj -> C:\GitHub\PTGPU_PC\PTGPU_test\Debug\PTGPU_test.exe
