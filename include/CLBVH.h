@@ -1,7 +1,11 @@
 #pragma once
 
 #include <float.h>
+#ifdef WIN32
 #include <stdint.h>
+#else
+#include <string.h>
+#endif
 #include <stdlib.h>
 
 #include "include\\geom.h"

@@ -2,7 +2,7 @@
 //kdtree이해 참조 -https://www.youtube.com/watch?v=Z4dNLvno-EY
 
 #include "stdafx.h"
-#include "KDNode.h"
+#include "include\\KDNode.h"
 
 inline float min2(float a, float b)
 {

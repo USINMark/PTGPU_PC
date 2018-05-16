@@ -130,7 +130,9 @@ extern "C" {
 	} PlyFile;
 
 	/* memory allocation */
+#ifdef WIN32
 	extern char *my_alloc();
+#endif
 #define myalloc(mem_size) my_alloc((mem_size), __LINE__, __FILE__)
 
 

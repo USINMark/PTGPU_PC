@@ -21,10 +21,10 @@
     <ClInclude Include="targetver.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CLBVH.h">
+    <ClInclude Include="include\CLBVH.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="KDNode.h">
+    <ClInclude Include="include\KDNode.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

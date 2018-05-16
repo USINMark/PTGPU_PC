@@ -39,6 +39,9 @@ WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 #include <math.h>
 #include <string.h>
 #include "include\\ply.h"
+#ifdef __ANDROID__
+#include "include/native-lib.h"
+#endif
 
 char *type_names[] = {
 	"invalid",

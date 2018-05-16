@@ -32,6 +32,7 @@ extern Camera camera;
 extern void AddWallLight();
 extern void SetUpOpenCL();
 extern void BuildBVH();
+extern void BuildKDtree();
 extern unsigned int *DrawFrame();
 
 #endif //PTGPU_NATIVE_LIB_H

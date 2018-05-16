@@ -42,8 +42,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "CL/cl.h"
 #endif
 
-#include "CLBVH.h"
-#include "KDNode.h"
+#include "include/CLBVH.h"
+#include "include/KDNode.h"
 #include "include/camera.h"
 #include "include/scene.h"
 #include "include/displayfunc.h"
@@ -304,7 +304,7 @@ void SetUpOpenCL() {
 			LOGI("OpenCL Platform %d: %s\n", i, pbuf);
 		}
 
-		platform = platforms[0];
+		platform = platforms[1];
 		free(platforms);
 	}
 
@@ -1149,8 +1149,7 @@ void reshapeFunc(int newWidth, int newHeight) {
 #define MOVE_STEP 10.0f
 #define ROTATE_STEP (2.f * M_PI / 180.f)
 
-void keyFunc(unsigned char key, int x, int y) //Å° ÀÔ·Â
-{
+void keyFunc(unsigned char key, int x, int y) {
 	switch (key) {
 	case 'p': {
 		FILE *f = fopen("image.ppm", "w"); // Write image to PPM file.
@@ -1299,8 +1298,7 @@ void InitGlut(int argc, char *argv[], char *windowTittle) {
 	glutIdleFunc(idleFunc);
 }
 
-int main(int argc, char *argv[]) 
-{
+int main(int argc, char *argv[]) {
     amiSmallptCPU = 0;
 
     if (argc == 7) {

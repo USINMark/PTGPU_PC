@@ -2,7 +2,6 @@
 #include "clheader.h"
 
 #define ACCELSTR 2 //0 is no accel, 1 is BVH and 2 is KDTREE
-#define CPU_PARTRENDERING
 //#define DEBUG_INTERSECTIONS
 
 # 1 "<stdin>"

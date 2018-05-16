@@ -1,6 +1,6 @@
 
 #include "stdafx.h"
-#include "CLBVH.h"
+#include "include\\CLBVH.h"
 
 #define BLOCK_SIZE 256
 

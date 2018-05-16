@@ -3,7 +3,11 @@
 
 #include <vector>
 #include <queue>
-
+#ifdef __ANDROID__
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#endif
 #include "include\\geom.h"
 #include "include\\KDTree.h"
 
@@ -54,7 +58,8 @@ public:
 	KDTree(Poi *pois, unsigned int poiCnt) : m_pois(pois), m_poiCnt(poiCnt), m_szbuf(0), m_maxdepth(0)
 	{
 	};
-	
+
+#ifdef WIN32
 	void printNode(KDTreeNode *node, int depth)
 	{
 		KDTreeNode *left = node->getLeft(), *right = node->getRight();
@@ -71,7 +76,7 @@ public:
 		if (left) printNode(left, depth + 1);
 		if (right) printNode(right, depth + 1);
 	}
-	
+#endif
 	Vec getMidpoint(Shape s);
 	Vec getMidpoint(Triangle t);
 	Vec getMidpoint(Sphere s);
