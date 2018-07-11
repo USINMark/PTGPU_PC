@@ -608,8 +608,6 @@ __constant
 	vsub(normal, hitPoint, s.s.p);
 	//{ normal.x = (hitPoint).x - (s.s.p).x; normal.y = (hitPoint).y - (s.s.p).y; normal.z = (hitPoint).z - (s.s.p).z; }
 
-	refl = s.refl;
-	col = s.c;
   }
   else if (s.type == TRIANGLE)
   {
@@ -622,12 +620,12 @@ __constant
 
 	vxcross(normal, e1, e2);
 	//{ normal.x = (e1).y * (e2).z - (e1).z * (e2).y; normal.y = (e1).z * (e2).x - (e1).x * (e2).z; normal.z = (e1).x * (e2).y - (e1).y * (e2).x; }
-
-	refl = s.refl;
-	col = s.c;
 	//col.x = col.y = 0.0f; 	col.z = 0.6f;
   }
 
+  refl = s.refl;
+  col = s.c;
+	
   vnorm(normal);
   //{ float l = 1.f / sqrt(((normal).x * (normal).x + (normal).y * (normal).y + (normal).z * (normal).z)); float k = (l); normal.x = k * (normal).x; normal.y = k * (normal).y; normal.z = k * (normal).z; }
   const float dp = vdot(normal, currentRay->d);

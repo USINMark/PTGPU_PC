@@ -206,7 +206,7 @@ CLBVH::CLBVH(Shape *shapes, int shapeCnt, Poi *pois, int poiCnt, cl_command_queu
 	clErrchk(clEnqueueWriteBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (shapeCnt - 1), btn, 0, NULL, NULL));
 	clErrchk(clEnqueueWriteBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (shapeCnt), btl, 0, NULL, NULL));
 	
-	clErrchk(clEnqueueWriteBuffer(m_cq, m_shBuf, CL_TRUE, 0, sizeof(Shape) * (m_shapeCnt), m_shapes, 0, NULL, NULL));
+	clErrchk(clEnqueueWriteBuffer(m_cq, m_shBuf, CL_TRUE, 0, sizeof(Shape) * (shapeCnt), m_shapes, 0, NULL, NULL));
 }
 
 /**
@@ -255,12 +255,12 @@ void CLBVH::buildRadixTree()
 #ifdef DEBUG_TREE
 	clFinish(m_cq);
 
-	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(TreeNode) * (m_shapeCnt - 1), tn, 0, NULL, NULL));
-	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(TreeNode) * (m_shapeCnt), tl, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt), btl, 0, NULL, NULL));
 	
-	FILE *f = fopen("images\\RadixTree.txt", "wt"); // Write image to PPM file.
+	FILE *f = fopen("RadixTree.txt", "wt"); // Write image to PPM file.
 	for (int i = 0; i < m_shapeCnt - 1; i++) {
-		fprintf(f, "Parent (%d), Left (%d), Right (%d), Leaf (%d), Min (%d), Max (%d)\n", tn[i].nParent, tn[i].nLeft, tn[i].nRight, tn[i].leaf, tn[i].min, tn[i].max);
+		fprintf(f, "Parent (%d), Left (%d), Right (%d), Leaf (%d), Min (%d), Max (%d)\n", btn[i].nParent, btn[i].nLeft, btn[i].nRight, btn[i].leaf, btn[i].min, btn[i].max);
 	}
 	fclose(f);
 #endif
@@ -319,14 +319,14 @@ void CLBVH::buildBVHTree()
 #ifdef DEBUG_TREE
 	clFinish(m_cq);
 
-	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(TreeNode) * (m_shapeCnt - 1), tn, 0, NULL, NULL));	
-	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(TreeNode) * (m_shapeCnt), tl, 0, NULL, NULL));	
+	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt), btl, 0, NULL, NULL));
 	clErrchk(clEnqueueReadBuffer(m_cq, ncBuf, CL_TRUE, 0, sizeof(int) * (m_shapeCnt), nodeCounter, 0, NULL, NULL));	
 
-	FILE *f = fopen("images\\BVHTree.txt", "wt"); // Write image to PPM file.
+	FILE *f = fopen("BVHTree.txt", "wt"); // Write image to PPM file.
 	for (int i = 0; i < m_shapeCnt; i++) {
-		if (i < m_shapeCnt - 1) fprintf(f, "Node, nodeCounter (%d), Bound (%f, %f, %f, %f, %f, %f)\n", nodeCounter[i], tn[i].bound.min_x, tn[i].bound.max_x, tn[i].bound.min_y, tn[i].bound.max_y, tn[i].bound.min_z, tn[i].bound.max_z);
-		fprintf(f, "Leaf, shape (%d), Bound (%f, %f, %f, %f, %f, %f)\n", tl[i].nShape, tl[i].bound.min_x, tl[i].bound.max_x, tl[i].bound.min_y, tl[i].bound.max_y, tl[i].bound.min_z, tl[i].bound.max_z);
+		if (i < m_shapeCnt - 1) fprintf(f, "Node, nodeCounter (%d), Bound (%f, %f, %f, %f, %f, %f)\n", nodeCounter[i], btn[i].bound.min_x, btn[i].bound.max_x, btn[i].bound.min_y, btn[i].bound.max_y, btn[i].bound.min_z, btn[i].bound.max_z);
+		fprintf(f, "Leaf, shape (%d), Bound (%f, %f, %f, %f, %f, %f)\n", btl[i].nShape, btl[i].bound.min_x, btl[i].bound.max_x, btl[i].bound.min_y, btl[i].bound.max_y, btl[i].bound.min_z, btl[i].bound.max_z);
 	}
 	fclose(f);
 #endif
@@ -374,8 +374,8 @@ void CLBVH::optimize()
 #ifdef DEBUG_TREE
 	clFinish(m_cq);
 
-	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(TreeNode) * (m_shapeCnt - 1), tn, 0, NULL, NULL));
-	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(TreeNode) * (m_shapeCnt), tl, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt), btl, 0, NULL, NULL));
 	clErrchk(clEnqueueReadBuffer(m_cq, ncBuf, CL_TRUE, 0, sizeof(int) * (m_shapeCnt), nodeCounter, 0, NULL, NULL));
 #endif
 	clErrchk(clReleaseMemObject(ncBuf));

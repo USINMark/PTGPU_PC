@@ -472,7 +472,7 @@ void SetUpOpenCL() {
 	program = clCreateProgramWithSource(context, 1, &sources, NULL, &status);
 	clErrchk(status);
 
-	status = clBuildProgram(program, 1, devices, "-I. -IE:\\users\\skkim\\VisualC++\\PTGPU_test\\PTGPU_test\\include", NULL, NULL);
+	status = clBuildProgram(program, 1, devices, "-I. ", NULL, NULL);
 	clErrchk(status);
 
 	if (status != CL_SUCCESS) {
@@ -538,7 +538,7 @@ void SetUpOpenCL() {
 	program = clCreateProgramWithSource(context, 1, &sourcesBvh, NULL, &status);
 	clErrchk(status);
 
-	status = clBuildProgram(program, 1, devices, "-I. -IE:\\users\\skkim\\VisualC++\\PTGPU_test\\PTGPU_test\\include", NULL, NULL);
+	status = clBuildProgram(program, 1, devices, "-I. ", NULL, NULL);
 	clErrchk(status);
 
 	if (status != CL_SUCCESS) {
@@ -573,7 +573,7 @@ void SetUpOpenCL() {
 #endif
 		LOGE("OpenCL Programm Build Log: %s\n", buildLog);
 
-		FILE *fp = fopen("E:\\users\\skkim\\VisualC++\\PTGPU_test\\PTGPU_test\\kernels\\error_BVH.txt", "wt");
+		FILE *fp = fopen("error_BVH.txt", "wt");
 		fwrite(buildLog, sizeof(char), retValSize + 1, fp);
 		fclose(fp);
 
@@ -663,7 +663,7 @@ void DrawBox(int xstart, int ystart, int bwidth, int bheight, int twidth, int th
 			const Ray ray = { rorig, rdir };
 
 			Vec r;
-			r.x = r.y = r.z = 1.0f;
+			r.x = r.y = r.z = 0.0f;
 
 			RadiancePathTracing(shapes, shapeCnt, pois, poiCnt, lightCnt, 
 #if (ACCELSTR == 1)
