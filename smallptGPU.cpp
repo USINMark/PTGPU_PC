@@ -304,7 +304,7 @@ void SetUpOpenCL() {
 			LOGI("OpenCL Platform %d: %s\n", i, pbuf);
 		}
 
-		platform = platforms[1];
+		platform = platforms[0];
 		free(platforms);
 	}
 
