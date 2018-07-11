@@ -65,6 +65,7 @@ typedef struct {
 	// values calculated from orig/target (direction, x and y basis vectors)
 	Vec dir, x, y;
 } CameraTemp;
+
 typedef struct {
 	float gammaCorrection;
 	Vec skyColor1, skyColor2;

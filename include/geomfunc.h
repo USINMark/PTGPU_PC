@@ -621,10 +621,8 @@ void RadianceOnePathTracing(
 		vadd(newDir, u, v);
 		vsmul(w, sqrt(1 - r2), w);
 		vadd(newDir, newDir, w);
-
-		currentRay->o = hitPoint;
-		currentRay->d = newDir;
-
+		rinit(*currentRay, hitPoint, newDir);
+		
 		return;
 	} else if (refl == SPEC) { /* Ideal SPECULAR reflection */
 		*specularBounce = 1;

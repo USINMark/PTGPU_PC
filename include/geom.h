@@ -72,6 +72,7 @@ typedef struct {
 		Triangle t;
 		Sphere s;
 	};
+
 	Vec e, c; /* emission, color */
 	enum Refl refl;
 

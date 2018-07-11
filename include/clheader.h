@@ -3,8 +3,8 @@
 
 #include "camera.h"
 #include "geom.h"
-#include "BVHTree.h"
-#include "KDTree.h"
+#include "BVHNodeGPU.h"
+#include "KDNodeGPU.h"
 
 #define MTEPSILON 0.000001
 

@@ -703,11 +703,9 @@ __constant
    vsmul(w, sqrt(1 - r2), w);
    //{ float k = (sqrt(1 - r2)); { (w).x = k * (w).x; (w).y = k * (w).y; (w).z = k * (w).z; } };
    vadd(newDir, newDir, w);
-
    //{ (newDir).x = (newDir).x + (w).x; (newDir).y = (newDir).y + (w).y; (newDir).z = (newDir).z + (w).z; };
 
-   currentRay->o = hitPoint;
-   currentRay->d = newDir;
+   rinit(*currentRay, hitPoint, newDir);
    
    return;
   } else if (refl == SPEC) {
