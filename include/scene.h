@@ -27,17 +27,33 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "geomfunc.h"
 
 #define WALL_RAD 1e4f
+
+typedef struct {
+	Vec e, c;
+	Refl refl;
+} Temp;
+
 static Sphere CornellSpheres[] = { /* Scene: radius, position, emission, color, material */
-	{ WALL_RAD, {WALL_RAD + 1.f, 40.8f, 81.6f}, {0.f, 0.f, 0.f}, {.75f, .25f, .25f}, DIFF }, /* Left */
-	{ WALL_RAD, {-WALL_RAD + 99.f, 40.8f, 81.6f}, {0.f, 0.f, 0.f}, {.25f, .25f, .75f}, DIFF }, /* Rght */
-	{ WALL_RAD, {50.f, 40.8f, WALL_RAD}, {0.f, 0.f, 0.f}, {.75f, .75f, .75f}, DIFF }, /* Back */
-	{ WALL_RAD, {50.f, 40.8f, -WALL_RAD + 270.f}, {0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}, DIFF }, /* Frnt */
-	{ WALL_RAD, {50.f, WALL_RAD, 81.6f}, {0.f, 0.f, 0.f}, {.75f, .75f, .75f}, DIFF }, /* Botm */
-	{ WALL_RAD, {50.f, -WALL_RAD + 81.6f, 81.6f}, {0.f, 0.f, 0.f}, {.75f, .75f, .75f}, DIFF }, /* Top */
-	{ 16.5f, {27.f, 16.5f, 47.f}, {0.f, 0.f, 0.f}, {.9f, .9f, .9f}, SPEC }, /* Mirr */
-	{ 16.5f, {73.f, 16.5f, 78.f}, {0.f, 0.f, 0.f}, {.9f, .9f, .9f}, REFR }, /* Glas */
-	{ 7.f, {50.f, 81.6f - 15.f, 81.6f}, {12.f, 12.f, 12.f}, {0.f, 0.f, 0.f}, DIFF } /* Lite */
+	{ WALL_RAD, {WALL_RAD + 1.f, 40.8f, 81.6f} }, //{0.f, 0.f, 0.f}, {.75f, .25f, .25f}, DIFF }, /* Left */
+	{ WALL_RAD, {-WALL_RAD + 99.f, 40.8f, 81.6f} }, //{0.f, 0.f, 0.f}, {.25f, .25f, .75f}, DIFF }, /* Rght */
+	{ WALL_RAD, {50.f, 40.8f, WALL_RAD} }, //{0.f, 0.f, 0.f}, {.75f, .75f, .75f}, DIFF }, /* Back */
+	{ WALL_RAD, {50.f, 40.8f, -WALL_RAD + 270.f} }, //{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}, DIFF }, /* Frnt */
+	{ WALL_RAD, {50.f, WALL_RAD, 81.6f} }, //{0.f, 0.f, 0.f}, {.75f, .75f, .75f}, DIFF }, /* Botm */
+	{ WALL_RAD, {50.f, -WALL_RAD + 81.6f, 81.6f} }, //{0.f, 0.f, 0.f}, {.75f, .75f, .75f}, DIFF }, /* Top */
+	{ 16.5f, {27.f, 16.5f, 47.f} }, //{0.f, 0.f, 0.f}, {.9f, .9f, .9f}, SPEC }, /* Mirr */
+	{ 16.5f, {73.f, 16.5f, 78.f} }, //{0.f, 0.f, 0.f}, {.9f, .9f, .9f}, REFR }, /* Glas */
+	{ 7.f, {50.f, 81.6f - 15.f, 81.6f} }//, {12.f, 12.f, 12.f}, {0.f, 0.f, 0.f}, DIFF } /* Lite */
 };
+
+Temp t[] = { { { 0.f, 0.f, 0.f },{ .75f, .25f, .25f }, DIFF }, /* Left */
+{ { 0.f, 0.f, 0.f },{ .25f, .25f, .75f }, DIFF }, /* Rght */
+{ { 0.f, 0.f, 0.f },{ .75f, .75f, .75f }, DIFF }, /* Back */
+{ { 0.f, 0.f, 0.f },{ 0.f, 0.f, 0.f }, DIFF }, /* Frnt */
+{ { 0.f, 0.f, 0.f },{ .75f, .75f, .75f }, DIFF }, /* Botm */
+{ { 0.f, 0.f, 0.f },{ .75f, .75f, .75f }, DIFF }, /* Top */
+{ { 0.f, 0.f, 0.f },{ .9f, .9f, .9f }, SPEC }, /* Mirr */
+{ { 0.f, 0.f, 0.f },{ .9f, .9f, .9f }, REFR }, /* Glas */
+{ { 12.f, 12.f, 12.f },{ 0.f, 0.f, 0.f }, DIFF } }; /* Lite */
 
 #ifdef SCENE_TEST
 static const Sphere spheres[] = { /* Scene: radius, position, emission, color, material */

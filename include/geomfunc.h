@@ -25,11 +25,21 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define	_GEOMFUNC_H
 
 #include "geom.h"
+//#include "KDTree.h"
 #include "simplernd.h"
 
 #ifndef SMALLPT_GPU
 #define INTERSECT_STACK_SIZE (18)
-#define MTEPSILON 0.000001
+
+inline float min2(float a, float b)
+{
+	return (a < b) ? a : b;
+}
+
+inline float max2(float a, float b)
+{
+	return (a > b) ? a : b;
+}
 
 inline void swap(float *a, float *b)
 {
@@ -107,7 +117,7 @@ float TriangleIntersect(
 	u *= inv_det;
 	v *= inv_det;
 #else
-	if (det > -MTEPSILON && det < MTEPSILON) return 0.0f;
+	if (det == 0) return 0.0f;
 
 	inv_det = 1.0 / det;
 
@@ -120,8 +130,9 @@ float TriangleIntersect(
 	if (v < 0.0 || u + v > 1.0) return 0.0f;
 
 	t = vdot(e2, qvec) * inv_det;
+	if (t > EPSILON) return t;
 #endif
-	return t;
+	return 0.0f;
 }
 
 void UniformSampleSphere(const float u1, const float u2, Vec *v) {
@@ -132,16 +143,6 @@ void UniformSampleSphere(const float u1, const float u2, Vec *v) {
 	const float yy = r * sin(phi);
 
 	vinit(*v, xx, yy, zz);
-}
-
-inline float min2(float a, float b)
-{
-	return (a < b) ? a : b;
-}
-
-inline float max2(float a, float b)
-{
-	return (a > b) ? a : b;
 }
 
 bool intersection_bound_test(const Ray r, Bound bound) {
@@ -201,11 +202,11 @@ __constant
 #ifdef GPU_KERNEL
 	__constant
 #endif
-	BVHTreeNode *tn,
+	BVHTreeNode *btn,
 #ifdef GPU_KERNEL
 	__constant
 #endif
-	BVHTreeNode *tl, 
+	BVHTreeNode *btl, 
 #elif (ACCELSTR == 2)
 #ifdef GPU_KERNEL
 	__constant
@@ -252,37 +253,37 @@ __constant
     while (topIndex != INTERSECT_STACK_SIZE) {
         int n = stack[topIndex++];
 		
-        if (intersection_bound_test(*r, tn[n].bound)) {
-			if (tn[n].leaf == 0) {				
-                stack[--topIndex] = tn[n].nRight;
-                stack[--topIndex] = tn[n].nLeft;
+        if (intersection_bound_test(*r, btn[n].bound)) {
+			if (btn[n].leaf == 0) {				
+                stack[--topIndex] = btn[n].nRight;
+                stack[--topIndex] = btn[n].nLeft;
 
                 if (topIndex < 0) {
                     //printf("Intersect stack not big enough. Increase INTERSECT_STACK_SIZE!\n");
                     return 0;
                 }
 			}
-			else if (tn[n].leaf == 2) {
+			else if (btn[n].leaf == 2) {
                 double d = 0.0f;
 
-			    if (shapes[tl[tn[n].nLeft].nShape].type == SPHERE ) d = SphereIntersect(&shapes[tl[tn[n].nLeft].nShape].s, r);
-				if (shapes[tl[tn[n].nLeft].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[tl[tn[n].nLeft].nShape].t, pois, poiCnt, r);
+			    if (shapes[btl[btn[n].nLeft].nShape].type == SPHERE ) d = SphereIntersect(&shapes[btl[btn[n].nLeft].nShape].s, r);
+				if (shapes[btl[btn[n].nLeft].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[btl[btn[n].nLeft].nShape].t, pois, poiCnt, r);
 
                 if (d != 0.0) {
                     if (d < *t) {
                         *t = d;
-                        *id = tl[tn[n].nLeft].nShape;
+                        *id = btl[btn[n].nLeft].nShape;
                     }
                     intersected = 1;
                 }
 				
-			    if (shapes[tl[tn[n].nRight].nShape].type == SPHERE ) d = SphereIntersect(&shapes[tl[tn[n].nRight].nShape].s, r);
-				if (shapes[tl[tn[n].nRight].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[tl[tn[n].nRight].nShape].t, pois, poiCnt, r);
+			    if (shapes[btl[btn[n].nRight].nShape].type == SPHERE ) d = SphereIntersect(&shapes[btl[btn[n].nRight].nShape].s, r);
+				if (shapes[btl[btn[n].nRight].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[btl[btn[n].nRight].nShape].t, pois, poiCnt, r);
 
                 if (d != 0.0) {
                     if (d < *t) {
                         *t = d;
-                        *id = tl[tn[n].nRight].nShape;
+                        *id = btl[btn[n].nRight].nShape;
                     }
                     intersected = 1;
                 }				
@@ -345,18 +346,31 @@ __constant
 #endif
 }
 
+/// finds a random point on a triangle
+///  u1, u2 are random [0,1]
+///  (u,v) is the barycentric coordinates for the output point
+///
+static void UniformSampleTriangle(const float u1, const float u2, float *u, float *v) {
+	float su1 = (float)sqrt(u1);
+	*u = 1.0f - su1;
+	*v = u2 * su1;
+}
+
 int IntersectP(
 #ifdef GPU_KERNEL
 __constant
 #endif
 	const Shape *shapes,
 	const unsigned int shapeCnt,
+	const Poi *pois,
+	const unsigned int poiCnt,
 	const Ray *r,
 	const float maxt) {
-	unsigned int i = shapeCnt;
+	unsigned int i = shapeCnt - 1;
 	for (; i--;) {
 		float d = 0.0f;
 		if (shapes[i].type == SPHERE ) d = SphereIntersect(&shapes[i].s, r);
+		if (shapes[i].type == TRIANGLE) d = TriangleIntersect(&shapes[i].t, pois, poiCnt, r);
 		if ((d != 0.f) && (d < maxt))
 			return 1;
 	}
@@ -370,6 +384,12 @@ __constant
 #endif
 	const Shape *shapes,
 	const unsigned int shapeCnt,
+#ifdef GPU_KERNEL
+	__constant
+#endif
+	const Poi *pois,
+	const unsigned int poiCnt,
+	const unsigned int lightCnt, 
 	unsigned int *seed0, unsigned int *seed1,
 	const Vec *hitPoint,
 	const Vec *normal,
@@ -378,42 +398,79 @@ __constant
 
 	/* For each light */
 	unsigned int i;
-	for (i = 0; i < shapeCnt; i++) {
-		if (shapes[i].type == TRIANGLE) continue;
+	unsigned int lightsVisited;
+	for (i = 0, lightsVisited = 0; i < shapeCnt && lightsVisited < lightCnt; i++) {
 #ifdef GPU_KERNEL
 __constant
 #endif
-		const Sphere *light = &shapes[i].s;
+		const Shape *light = &shapes[i];
 		if (!viszero(light->e)) {
-			/* It is a light source */
+			// this is a light source (as it has an emission component)...
+            lightsVisited++;
+
+			// the shadow ray starts at the hitPoint and goes to a random point on the light
 			Ray shadowRay;
 			shadowRay.o = *hitPoint;
 
-			/* Choose a point over the light source */
-			Vec unitSpherePoint;
-			UniformSampleSphere(GetRandom(seed0, seed1), GetRandom(seed0, seed1), &unitSpherePoint);
-			Vec spherePoint;
-			vsmul(spherePoint, light->rad, unitSpherePoint);
-			vadd(spherePoint, spherePoint, light->p);
+			// choose a random point over the area of the light source
+			Vec lightPoint;
+			Vec lightNormalWhereShadowRayHit;
+			switch (light->type) {
+            case TRIANGLE:
+                {
+                    float barycentricU, barycentricV;
+					Vec e1, e2;
+                    UniformSampleTriangle(GetRandom(seed0, seed1), GetRandom(seed0, seed1), &barycentricU, &barycentricV);
+                    vsub(e1, pois[light->t.p2].p, pois[light->t.p1].p)
+                    vsub(e2, pois[light->t.p3].p, pois[light->t.p1].p)
+                    vsmul(e1, barycentricU, e1);
+                    vsmul(e2, barycentricV, e2);
+                    vassign(lightPoint, pois[light->t.p1].p);
+                    vadd(lightPoint, lightPoint, e1);
+                    vadd(lightPoint, lightPoint, e2);
+
+                    // sets what is the normal on the triangle where the shadow ray hit it
+                    // (it's the same regardless of the point because it's a triangle)
+                    vxcross(lightNormalWhereShadowRayHit, e1, e2);
+                    vnorm(lightNormalWhereShadowRayHit);
+                }
+                break;
+
+            case SPHERE:
+            default:
+                {
+                    Vec unitSpherePoint;
+                    UniformSampleSphere(GetRandom(seed0, seed1), GetRandom(seed0, seed1), &unitSpherePoint);
+                    vsmul(lightPoint, light->s.rad, unitSpherePoint);
+                    vadd(lightPoint, lightPoint, light->s.p);
+
+                    // sets what is the normal on the triangle where the shadow ray hit it
+                    vassign(lightNormalWhereShadowRayHit, unitSpherePoint);
+                }
+			}
 
 			/* Build the shadow ray direction */
-			vsub(shadowRay.d, spherePoint, *hitPoint);
+			vsub(shadowRay.d, lightPoint, *hitPoint);
 			const float len = sqrt(vdot(shadowRay.d, shadowRay.d));
 			vsmul(shadowRay.d, 1.f / len, shadowRay.d);
 
-			float wo = vdot(shadowRay.d, unitSpherePoint);
+			float wo = vdot(shadowRay.d, lightNormalWhereShadowRayHit);
 			if (wo > 0.f) {
 				/* It is on the other half of the sphere */
 				continue;
 			} else
 				wo = -wo;
 
+			wo = clamp(wo, 0.f, 1.f);
+			
 			/* Check if the light is visible */
 			const float wi = vdot(shadowRay.d, *normal);
-			if ((wi > 0.f) && (!IntersectP(shapes, shapeCnt, &shadowRay, len - EPSILON))) {
+			if ((wi > 0.f) && (!IntersectP(shapes, shapeCnt, pois, poiCnt, &shadowRay, len - EPSILON))) {
 				Vec c; vassign(c, light->e);
-				const float s = (4.f * FLOAT_PI * light->rad * light->rad) * wi * wo / (len *len);
+				const float s = light->area * wi * wo / (len *len);
 				vsmul(c, s, c);
+
+				// last, we add the direct contribution of this light to the output Ld radiance
 				vadd(*result, *result, c);
 			}
 		}
@@ -431,6 +488,7 @@ void RadianceOnePathTracing(
 #endif
 	const Poi *pois,
 	const unsigned int poiCnt,
+	const unsigned int lightCnt,
 #if (ACCELSTR == 1)
 #ifdef GPU_KERNEL
 	__constant
@@ -452,7 +510,8 @@ void RadianceOnePathTracing(
 	int szkng, int szkn,
 #endif
 	Ray *currentRay,
-	unsigned int *seed0, unsigned int *seed1, int depth, Vec *rad, Vec *throughput, int *specularBounce, int *terminated, 
+	unsigned int *seed0, unsigned int *seed1, 
+	int depth, Vec *rad, Vec *throughput, int *specularBounce, int *terminated, 
 	Vec *result) {
 	float t; /* distance to intersection */
 	unsigned int id = 0; /* id of intersected object */
@@ -481,21 +540,20 @@ void RadianceOnePathTracing(
 	{
 		vsub(normal, hitPoint, s.s.p);
 
-		refl = s.s.refl;
-		col = s.s.c;
+		refl = s.refl;
+		col = s.c;
 	}
 	else if (s.type == TRIANGLE)
 	{
 		Vec v0 = pois[s.t.p1].p, v1 = pois[s.t.p2].p, v2 = pois[s.t.p3].p, e1, e2;
 
 		vsub(e1, v1, v0);
-		vsub(e2, v2, v1);
+		vsub(e2, v2, v0);
 
 		vxcross(normal, e1, e2);
 
-		refl = s.t.refl;
-		col.x = col.y = 0.0f;
-		col.z = 1.0f;
+		refl = s.refl;
+		col = s.c;
 	}
 	vnorm(normal);
 
@@ -507,24 +565,21 @@ void RadianceOnePathTracing(
 
 	vsmul(nl, invSignDP, normal);
 
-	if (s.type == SPHERE)
-	{
-		/* Add emitted light */
-		Vec eCol;
+	/* Add emitted light */
+	Vec eCol;
 
-		vassign(eCol, s.s.e);
-		if (!viszero(eCol)) {
-			if (*specularBounce) {
-				vsmul(eCol, fabs(dp), eCol);
-				vmul(eCol, *throughput, eCol);
-				vadd(*rad, *rad, eCol);
-			}
-
-			*result = *rad;
-			*terminated = 1;
-
-			return;
+	vassign(eCol, s.e);
+	if (!viszero(eCol)) {
+		if (*specularBounce) {
+			vsmul(eCol, fabs(dp), eCol);
+			vmul(eCol, *throughput, eCol);
+			vadd(*rad, *rad, eCol);
 		}
+
+		*result = *rad;
+		*terminated = 1;
+
+		return;
 	}
 
 	if (refl == DIFF) { /* Ideal DIFFUSE reflection */
@@ -535,7 +590,7 @@ void RadianceOnePathTracing(
 		/* Direct lighting component */
 		Vec Ld;
 
-		SampleLights(shapes, shapeCnt, seed0, seed1, &hitPoint, &nl, &Ld);
+		SampleLights(shapes, shapeCnt, pois, poiCnt, lightCnt, seed0, seed1, &hitPoint, &nl, &Ld);
 		vmul(Ld, *throughput, Ld);
 		vadd(*rad, *rad, Ld);
 
@@ -550,8 +605,7 @@ void RadianceOnePathTracing(
 		Vec u, a;
 		if (fabs(w.x) > .1f) {
 			vinit(a, 0.f, 1.f, 0.f);
-		}
-		else {
+		} else {
 			vinit(a, 1.f, 0.f, 0.f);
 		}
 		vxcross(u, a, w);
@@ -570,8 +624,7 @@ void RadianceOnePathTracing(
 		currentRay->d = newDir;
 
 		return;
-	}
-	else if (refl == SPEC) { /* Ideal SPECULAR reflection */
+	} else if (refl == SPEC) { /* Ideal SPECULAR reflection */
 		*specularBounce = 1;
 
 		Vec newDir;
@@ -583,8 +636,7 @@ void RadianceOnePathTracing(
 		rinit(*currentRay, hitPoint, newDir);
 
 		return;
-	}
-	else {
+	} else {
 		*specularBounce = 1;
 
 		Vec newDir;
@@ -633,8 +685,7 @@ void RadianceOnePathTracing(
 			rassign(*currentRay, reflRay);
 
 			return;
-		}
-		else {
+		} else {
 			vsmul(*throughput, TP, *throughput);
 			vmul(*throughput, *throughput, col);
 			rinit(*currentRay, hitPoint, transDir);
@@ -655,6 +706,7 @@ void RadiancePathTracing(
 #endif
 	const Poi *pois,
 	const unsigned int poiCnt,
+	const unsigned int lightCnt, 
 #if (ACCELSTR == 1)
 #ifdef GPU_KERNEL
 	__constant
@@ -692,7 +744,7 @@ void RadiancePathTracing(
 			return;
 		}
 
-		RadianceOnePathTracing(shapes, shapeCnt, pois, poiCnt, 
+		RadianceOnePathTracing(shapes, shapeCnt, pois, poiCnt, lightCnt, 
 #if (ACCELSTR == 1)
 			btn, btl, 
 #elif (ACCELSTR == 2)
@@ -718,6 +770,7 @@ void RadianceDirectLighting(
 #endif
 	const Poi *pois,
 	const unsigned int poiCnt,
+	const unsigned int lightCnt, 
 #if (ACCELSTR == 1)
 #ifdef GPU_KERNEL
 	__constant
@@ -743,7 +796,7 @@ void RadianceDirectLighting(
 #endif
 	const Ray *startRay,
 	unsigned int *seed0, unsigned int *seed1,
-	Vec *result, KDTreeNode *node) {
+	Vec *result) {
 	Ray currentRay; rassign(currentRay, *startRay);
 	Vec rad; vinit(rad, 0.f, 0.f, 0.f);
 	Vec throughput; vinit(throughput, 1.f, 1.f, 1.f);
@@ -752,7 +805,7 @@ void RadianceDirectLighting(
 	int specularBounce = 1;
 	for (;; ++depth) {
 		// Removed Russian Roulette in order to improve execution on SIMT
-		if (depth > 6) {
+		if (depth > MAX_DEPTH) {
 			*result = rad;
 			return;
 		}
@@ -773,14 +826,27 @@ void RadianceDirectLighting(
 #ifdef GPU_KERNEL
 OCL_CONSTANT_BUFFER
 #endif
-		const Sphere *obj = &shapes[id].s; /* the hit object */
+		const Shape *obj = &shapes[id]; /* the hit object */
 
 		Vec hitPoint;
 		vsmul(hitPoint, t, currentRay.d);
 		vadd(hitPoint, currentRay.o, hitPoint);
 
+		// the normal at the intersection point
 		Vec normal;
-		vsub(normal, hitPoint, obj->p);
+		switch (obj->type) {
+		case SPHERE:
+			vsub(normal, hitPoint, obj->s.p);			
+			break;
+
+		case TRIANGLE:
+			{
+			Vec e1; vsub(e1, pois[obj->t.p2].p, pois[obj->t.p1].p);
+			Vec e2; vsub(e2, pois[obj->t.p3].p, pois[obj->t.p1].p);
+			vxcross(normal, e1, e2);
+			break;
+			}
+		}
 		vnorm(normal);
 
 		const float dp = vdot(normal, currentRay.d);
@@ -810,7 +876,7 @@ OCL_CONSTANT_BUFFER
 			/* Direct lighting component */
 
 			Vec Ld;
-			SampleLights(shapes, shapeCnt, seed0, seed1, &hitPoint, &nl, &Ld);
+			SampleLights(shapes, shapeCnt, pois, poiCnt, lightCnt, seed0, seed1, &hitPoint, &nl, &Ld);
 			vmul(Ld, throughput, Ld);
 			vadd(rad, rad, Ld);
 
@@ -887,6 +953,5 @@ OCL_CONSTANT_BUFFER
 }
 
 #endif
-
 #endif	/* _GEOMFUNC_H */
 

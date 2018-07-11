@@ -55,7 +55,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <GL/glut.h>
 #define M_PI       3.14159265358979323846 
 
-bool Read(char *fileName);
+bool Read(char *fileName, bool *walllight);
 #endif
 
 #ifdef EXP_KERNEL
@@ -65,10 +65,10 @@ int *specularBounce, *terminated;
 
 static cl_mem rayBuffer, throughputBuffer, specularBounceBuffer, terminatedBuffer, resultBuffer;
 static cl_kernel kernelGen, kernelRadiance, kernelFill;
-char kernelFileName[MAX_FN] = "include\\preprocessed_rendering_kernel_exp.cl";
+char kernelFileName[MAX_FN] = "include\\rendering_kernel_exp.cl";
 #else
 static cl_kernel kernel;
-char kernelFileName[MAX_FN] = "include\\preprocessed_rendering_kernel.cl";
+char kernelFileName[MAX_FN] = "include\\rendering_kernel.cl";
 #endif
 
 #ifdef CPU_PARTRENDERING
@@ -106,7 +106,7 @@ static int currentSample = 0;
 int useGPU = 1;
 int forceWorkSize = 0;
 
-unsigned int workGroupSize = 1, shapeCnt = 0, poiCnt = 0;
+unsigned int workGroupSize = 1, shapeCnt = 0, poiCnt = 0, lightCnt = 0;;
 int pixelCount;
 Camera camera;
 Shape *shapes;
@@ -665,7 +665,7 @@ void DrawBox(int xstart, int ystart, int bwidth, int bheight, int twidth, int th
 			Vec r;
 			r.x = r.y = r.z = 1.0f;
 
-			RadiancePathTracing(shapes, shapeCnt, pois, poiCnt,
+			RadiancePathTracing(shapes, shapeCnt, pois, poiCnt, lightCnt, 
 #if (ACCELSTR == 1)
 				btn, btl,
 #elif (ACCELSTR == 2)
@@ -700,7 +700,7 @@ void DrawBox(int xstart, int ystart, int bwidth, int bheight, int twidth, int th
 
 unsigned int *DrawAllBoxes(int bwidth, int bheight, float *rCPU, bool bFirst) {
 	int startSampleCount = currentSample, nGPU = 0, nCPU = 1, index = 0;
-	bool cpuTurn = false;
+	bool cpuTurn = true;
 	double startTime = WallClockTime(), setStartTime, kernelStartTime;
 	double setTotalTime = 0.0, kernelTotalTime = 0.0, rwTotalTime = 0.0;
 	double cpuTotalTime = 0.0;
@@ -730,6 +730,7 @@ unsigned int *DrawAllBoxes(int bwidth, int bheight, float *rCPU, bool bFirst) {
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(unsigned int), (void *)&shapeCnt));
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&poiBuffer));
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(unsigned int), (void *)&poiCnt));
+				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(unsigned int), (void *)&lightCnt));
 #if (ACCELSTR == 1)
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&btnBuffer));
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&btlBuffer));
@@ -976,6 +977,7 @@ unsigned int *DrawFrame() {
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(unsigned int), (void *) &shapeCnt));
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&poiBuffer));
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(unsigned int), (void *)&poiCnt));
+	clErrchk(clSetKernelArg(kernel, index++, sizeof(unsigned int), (void *)&lightCnt));
 #if (ACCELSTR == 1)	
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&btnBuffer));
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&btlBuffer));
@@ -1302,6 +1304,7 @@ int main(int argc, char *argv[]) {
     amiSmallptCPU = 0;
 
     if (argc == 7) {
+		bool walllight = true;
 		srand(time(NULL));
 
         useGPU = atoi(argv[1]);
@@ -1311,8 +1314,8 @@ int main(int argc, char *argv[]) {
         width = atoi(argv[4]);
         height = atoi(argv[5]);
 		
-		Read(argv[6]);
-		AddWallLight();
+		Read(argv[6], &walllight);
+		if (walllight) AddWallLight();
 
 #if (ACCELSTR == 0)
 		SetUpOpenCL();
@@ -1330,10 +1333,13 @@ int main(int argc, char *argv[]) {
 		shapeCnt = sizeof(CornellSpheres) / sizeof(Sphere);
 		shapes = (Shape *)malloc(sizeof(Shape) * shapeCnt);
 
-		for (int i = 0; i < shapeCnt; i++)
+		for(int i = 0; i < shapeCnt; i++)
 		{
 			shapes[i].type = SPHERE;
 			shapes[i].s = CornellSpheres[i];
+			shapes[i].e = t[i].e;
+			shapes[i].c = t[i].c;
+			shapes[i].refl = t[i].refl;
 		}
 
         vinit(camera.orig, 50.f, 45.f, 205.6f);
@@ -1357,15 +1363,15 @@ int main(int argc, char *argv[]) {
 
 void AddWallLight()
 {
-	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt++].s = { WALL_RAD,{ WALL_RAD + 25.0f, 0.0f, 0.0f },{ 0.f, 0.f, 0.f },{ .75f, .25f, .25f }, DIFF }; /* Left */
-	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt++].s = { WALL_RAD,{ -WALL_RAD - 25.0f, 0.0f, 0.0f },{ 0.f, 0.f, 0.f },{ .25f, .25f, .75f }, DIFF }; /* Rght */
-	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt++].s = { WALL_RAD,{ 0.0f, 0.0f, WALL_RAD - 25.0f },{ 0.f, 0.f, 0.f },{ .75f, .75f, .75f }, DIFF }; /* Back */
-	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt++].s = { WALL_RAD,{ 0.0f, 0.0f, -WALL_RAD + 100.0f },{ 0.f, 0.f, 0.f },{ 0.f, 0.f, 0.f }, DIFF }; /* Frnt */
-	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt++].s = { WALL_RAD,{ 0.0f, WALL_RAD + 25.0f, 0.0f },{ 0.f, 0.f, 0.f },{ .75f, .75f, .75f }, DIFF }; /* Botm */
-	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt++].s = { WALL_RAD,{ 0.0f, -WALL_RAD - 25.0f, 0.0f },{ 0.f, 0.f, 0.f },{ .75f, .75f, .75f }, DIFF }; /* Top */
-	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt++].s = { 5.0f, { 10.0f, -17.0f, 0.0f }, { 0.f, 0.f, 0.f }, { .9f, .9f, .9f }, SPEC }, /* Mirr */
-	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt++].s = { 5.0f,{ -10.0f, -17.0f, 0.0f },{ 0.f, 0.f, 0.f },{ .9f, .9f, .9f }, REFR }, /* Glas */
-	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt++].s = { 2.f, { 10.0f, 15.0f, 0.0f }, { 12.f, 12.f, 12.f }, { 0.f, 0.f, 0.f }, DIFF }; /* Lite */
+	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt].s = { WALL_RAD,{ WALL_RAD + 25.0f, 0.0f, 0.0f } };  shapes[shapeCnt].e = { 0.f, 0.f, 0.f }; shapes[shapeCnt].c = { .75f, .25f, .25f }; shapes[shapeCnt++].refl = DIFF; /* Left */
+	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt].s = { WALL_RAD,{ -WALL_RAD - 25.0f, 0.0f, 0.0f } };  shapes[shapeCnt].e = { 0.f, 0.f, 0.f }; shapes[shapeCnt].c = { .25f, .25f, .75f }; shapes[shapeCnt++].refl = DIFF; /* Rght */
+	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt].s = { WALL_RAD,{ 0.0f, 0.0f, WALL_RAD - 25.0f } };  shapes[shapeCnt].e = { 0.f, 0.f, 0.f }; shapes[shapeCnt].c = { .75f, .75f, .75f }; shapes[shapeCnt++].refl = DIFF; /* Back */
+	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt].s = { WALL_RAD,{ 0.0f, 0.0f, -WALL_RAD + 100.0f } };  shapes[shapeCnt].e = { 0.f, 0.f, 0.f }; shapes[shapeCnt].c = { 0.f, 0.f, 0.f }; shapes[shapeCnt++].refl = DIFF; /* Frnt */
+	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt].s = { WALL_RAD,{ 0.0f, WALL_RAD + 25.0f, 0.0f } };  shapes[shapeCnt].e = { 0.f, 0.f, 0.f }; shapes[shapeCnt].c = { .75f, .75f, .75f }; shapes[shapeCnt++].refl = DIFF; /* Botm */
+	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt].s = { WALL_RAD,{ 0.0f, -WALL_RAD - 25.0f, 0.0f } };  shapes[shapeCnt].e = { 0.f, 0.f, 0.f }; shapes[shapeCnt].c = { .75f, .75f, .75f }; shapes[shapeCnt++].refl = DIFF; /* Top */
+	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt].s = { 5.0f,{ 10.0f, -17.0f, 0.0f } };  shapes[shapeCnt].e = { 0.f, 0.f, 0.f }; shapes[shapeCnt].c = { .9f, .9f, .9f }; shapes[shapeCnt++].refl = SPEC; /* Mirr */
+	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt].s = { 5.0f,{ -10.0f, -17.0f, 0.0f } };  shapes[shapeCnt].e = { 0.f, 0.f, 0.f }; shapes[shapeCnt].c = { .9f, .9f, .9f }; shapes[shapeCnt++].refl = REFR; /* Glas */
+	shapes[shapeCnt].type = SPHERE; shapes[shapeCnt].s = { 2.f,{ 10.0f, 15.0f, 0.0f } };  shapes[shapeCnt].e = { 12.f, 12.f, 12.f }; shapes[shapeCnt].c = { 0.f, 0.f, 0.f }; shapes[shapeCnt++].refl = DIFF; /* Lite */
 }
 
 #if (ACCELSTR == 1)

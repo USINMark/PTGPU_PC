@@ -48,7 +48,7 @@ extern int amiSmallptCPU;
 //extern void InitGlut(int argc, char *argv[], char *windowTittle);
 double WallClockTime();
 
-bool Read(const char *);
+bool Read(char *fileName, bool *walllight);
 void UpdateCamera();
 void ReInit(const int reallocBuffers);
 

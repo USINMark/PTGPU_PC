@@ -1,4 +1,4 @@
-//VS2017community에서 작성,preprocessed_rendering_kernel.cl에 변경하기 위한 공부중
+//VS2017community에서 작성,rendering_kernel.cl에 변경하기 위한 공부중
 //kdtree이해 참조 -https://www.youtube.com/watch?v=Z4dNLvno-EY
 
 #include "stdafx.h"

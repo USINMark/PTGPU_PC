@@ -50,8 +50,7 @@ enum Refl {
 
 typedef struct {
 	float rad;
-	Vec p, e, c;
-	enum Refl refl;
+	Vec p;
 } Sphere;
 
 typedef struct {
@@ -60,8 +59,6 @@ typedef struct {
 
 typedef struct {
 	int p1, p2, p3;
-	Vec e, c; /* emission, color */
-	enum Refl refl; /* reflection type (DIFFuse, SPECular, REFRactive) */
 } Triangle;
 
 typedef enum tagType { SPHERE, TRIANGLE } Type;
@@ -75,9 +72,13 @@ typedef struct {
 		Triangle t;
 		Sphere s;
 	};
+	Vec e, c; /* emission, color */
+	enum Refl refl;
+
 	int index;
 	unsigned int morton_code;
 	Bound b;
+	float area;
 } Shape;
 
 #endif	/* _GEOM_H */
