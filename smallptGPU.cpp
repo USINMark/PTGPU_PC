@@ -1121,12 +1121,12 @@ void idleFunc(void) {
 }
 
 void displayFunc(void) {
-	static float rCPU = 1.0f;
-	static bool first = true;
-
 	glClear(GL_COLOR_BUFFER_BIT);
 	glRasterPos2i(0, 0);
 #ifdef CPU_PARTRENDERING
+	static float rCPU = 1.0f;
+	static bool first = true;
+
 	DrawAllBoxes(160, 120, &rCPU, first);
 	first = false;
 #else

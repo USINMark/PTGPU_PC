@@ -242,10 +242,10 @@ __constant
 #if (ACCELSTR == 1)
 __constant
 
- BVHTreeNode *btn, 
+ BVHNodeGPU *btn, 
 __constant
 
- BVHTreeNode *btl, 
+ BVHNodeGPU *btl, 
 #elif (ACCELSTR == 2)
  __constant
  
@@ -550,10 +550,10 @@ __constant
 #if (ACCELSTR == 1)
 __constant
 
- BVHTreeNode *btn, 
+ BVHNodeGPU *btn, 
 __constant
 
- BVHTreeNode *btl, 
+ BVHNodeGPU *btl, 
 #elif (ACCELSTR == 2)
 __constant 
  
@@ -812,10 +812,10 @@ __constant
 #if (ACCELSTR == 1)
 __constant
 
- BVHTreeNode *btn, 
+ BVHNodeGPU *btn, 
 __constant
 
- BVHTreeNode *btl, 
+ BVHNodeGPU *btl, 
 #elif (ACCELSTR == 2)
 __constant 
  
@@ -881,10 +881,10 @@ __constant
 #if (ACCELSTR == 1)
 __constant
 
- BVHTreeNode *btn, 
+ BVHNodeGPU *btn, 
 __constant
 
- BVHTreeNode *btl, 
+ BVHNodeGPU *btl, 
 #elif (ACCELSTR == 2)
 __constant 
  
@@ -1125,8 +1125,8 @@ __kernel void RadianceGPU(
  const unsigned int poiCnt,
  const unsigned int lightCnt, 
 #if (ACCELSTR == 1)
- __constant BVHTreeNode *btn, 
- __constant BVHTreeNode *btl, 
+ __constant BVHNodeGPU *btn, 
+ __constant BVHNodeGPU *btl, 
 #elif (ACCELSTR == 2)
 __constant
  
@@ -1201,8 +1201,8 @@ __kernel void RadianceBoxGPU(
  const unsigned int poiCnt,
  const unsigned int lightCnt,
 #if (ACCELSTR == 1)
- __constant BVHTreeNode *btn, 
- __constant BVHTreeNode *btl, 
+ __constant BVHNodeGPU *btn, 
+ __constant BVHNodeGPU *btl, 
 #elif (ACCELSTR == 2)
  __constant KDNodeGPU *kng,
  __constant int *kn, 

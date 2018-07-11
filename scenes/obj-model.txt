@@ -9,16 +9,41 @@ model models/cube.obj  0 10 0  16 16 16  0 0 0  0.4 0.7 0.1  0
 model models/plane-y.obj  0 100 0   100 1 100  0 0 0  0.75 .75 0.75  0
 model models/plane-z.obj  0 70 -60   100 75 1  0 0 0  0.75 .75 0.75  0
 model models/table.obj  27 6 47  16 16 16  0 0 0  0.5 0.2 0  0
-model models/teapot.obj 21 21 44  2.5 2.5 2.5  0 0 0  1 0.9 1  0
+model models/teapot.obj 21 21 40  4 4 4  0 0 0  1 0.9 1  0
 triangle  10 98 10  -10 98 -10  10 98 -10  20 20 20  0 0 0  0
 triangle  -10 98 10  -10 98 -10  10 98 10  20 20 20  0 0 0  0
+
+# Teapot
+model models/teapot.obj 21 21 40  4 4 4  0 0 0  1 0.9 1  0
+model models/teapot_my.obj 23 21 44  1.0 1.0 1.0  0 0 0  1 0.9 1  0
+model models/teapot-800.obj 23 22 44  2.5 2.5 2.5  0 0 0  1 0.9 1  0
+
+# Monkey
+model models/monkey.obj 24 28 44  13 13 13  0 0 0  1 0.9 1  0
+model models/half-monkey.obj 24 28 45  8 8 8  0 0 0  1 0.9 1  0
+
+# Bunny
+model models/bun_zipper_res4.obj 24 23 44  2 2 2  0 0 0  1 0.9 1  0
+model models/bun_zipper_res3_changed.obj 24 23 44  1 1 1  0 0 0  1 0.9 1  0
+
+# Cube
+model models/cube.obj 24 30 45  7 7 7  0 0 0  1 0.9 1  0
+
+# Ant
+model models/ant.obj 29 18 44  0.8 0.8 0.8  0 0 0  1 0.9 1  0
+
+# Knot
+model models/knot.obj 29 22.5 44  0.1 0.1 0.1  0 0 0  1 0.9 1  0
+
+# Ironman
+model models/IronMan_resized_reduced.obj 24 28 45  8 8 8  0 0 0  1 0.9 1  0
+
+# Happy Budha
+model models/happy_vrip_res4.obj 29 18 44  0.8 0.8 0.8  0 0 0  1 0.9 1  0
 
 model models/d20.obj  27 24 47  2 2 2  0 0 0  0.7 0.7 0.4  2
 model models/d20.obj  31 24 44  2 2 2  0 0 0  0.3 0.7 0.6  1
 model models/d20.obj  23.5 24 47.5  2 2 2  0 0 0  0.7 0.2 0.7  0
-
-
-
 
 # light: sphere with luminaire
 model models/light.obj  0 88 0  11 6 11  0 0 0  1 1 0.5  1
