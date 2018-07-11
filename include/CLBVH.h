@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 #include "include\\geom.h"
-#include "include\\BVHTree.h"
+#include "include\\BVHNodeGPU.h"
 #include "CL\\cl.h"
 #include "include\\native-lib.h"
 
@@ -27,7 +27,7 @@ private:
 	cl_mem m_nBuf, m_lBuf, m_shBuf;
 	cl_command_queue m_cq;
 
-	BVHTreeNode *btn, *btl;
+	BVHNodeGPU *btn, *btl;
 	
 	unsigned int m_poiCnt, m_shapeCnt;
 	Poi *m_pois;
@@ -44,6 +44,6 @@ public:
 	void buildBVHTree();
 	void optimize();
 
-	void getTrees(BVHTreeNode **ppbtn, BVHTreeNode **ppbtl);
+	void getTrees(BVHNodeGPU **ppbtn, BVHNodeGPU **ppbtl);
 	int *bubblesort_Geometry(Geometry *geo);
 };

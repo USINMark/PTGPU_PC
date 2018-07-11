@@ -109,12 +109,12 @@ Bound CLBVH::getBound(Triangle t)
 CLBVH::CLBVH(Shape *shapes, int shapeCnt, Poi *pois, int poiCnt, cl_command_queue cq, cl_context ctx, cl_kernel kRad, cl_kernel kBvh, cl_kernel kOpt) : m_shapes(shapes), m_shapeCnt(shapeCnt), m_pois(pois), m_poiCnt(poiCnt), m_cq(cq), m_ctx(ctx), m_kRad(kRad), m_kBvh(kBvh), m_kOpt(kOpt)
 {
 	// For internal nodes, leaf = false
-	btn = (BVHTreeNode *)malloc(sizeof(BVHTreeNode) * (shapeCnt - 1));
-	memset(btn, 0, sizeof(BVHTreeNode) * (shapeCnt - 1));
+	btn = (BVHNodeGPU *)malloc(sizeof(BVHNodeGPU) * (shapeCnt - 1));
+	memset(btn, 0, sizeof(BVHNodeGPU) * (shapeCnt - 1));
 
 	// For leaves, leaf = true
-	btl = (BVHTreeNode *)malloc(sizeof(BVHTreeNode) * shapeCnt);
-	memset(btl, ~0, sizeof(BVHTreeNode) * shapeCnt);
+	btl = (BVHNodeGPU *)malloc(sizeof(BVHNodeGPU) * shapeCnt);
+	memset(btl, ~0, sizeof(BVHNodeGPU) * shapeCnt);
 
 	// Initialize morton codes
 	float min_x = FLT_MAX;
@@ -194,17 +194,17 @@ CLBVH::CLBVH(Shape *shapes, int shapeCnt, Poi *pois, int poiCnt, cl_command_queu
 
 	cl_int status;
 	
-	m_nBuf = clCreateBuffer(m_ctx, CL_MEM_READ_WRITE, sizeof(BVHTreeNode) * (shapeCnt - 1), NULL, &status);
+	m_nBuf = clCreateBuffer(m_ctx, CL_MEM_READ_WRITE, sizeof(BVHNodeGPU) * (shapeCnt - 1), NULL, &status);
 	clErrchk(status);	
 
-	m_lBuf = clCreateBuffer(m_ctx, CL_MEM_READ_WRITE, sizeof(BVHTreeNode) * (shapeCnt), NULL, &status);
+	m_lBuf = clCreateBuffer(m_ctx, CL_MEM_READ_WRITE, sizeof(BVHNodeGPU) * (shapeCnt), NULL, &status);
 	clErrchk(status);
 
 	m_shBuf = clCreateBuffer(m_ctx, CL_MEM_READ_ONLY, sizeof(Shape) * (shapeCnt), NULL, &status);
 	clErrchk(status);
 
-	clErrchk(clEnqueueWriteBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (shapeCnt - 1), btn, 0, NULL, NULL));
-	clErrchk(clEnqueueWriteBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (shapeCnt), btl, 0, NULL, NULL));
+	clErrchk(clEnqueueWriteBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (shapeCnt - 1), btn, 0, NULL, NULL));
+	clErrchk(clEnqueueWriteBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (shapeCnt), btl, 0, NULL, NULL));
 	
 	clErrchk(clEnqueueWriteBuffer(m_cq, m_shBuf, CL_TRUE, 0, sizeof(Shape) * (shapeCnt), m_shapes, 0, NULL, NULL));
 }
@@ -255,8 +255,8 @@ void CLBVH::buildRadixTree()
 #ifdef DEBUG_TREE
 	clFinish(m_cq);
 
-	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
-	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt), btl, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (m_shapeCnt), btl, 0, NULL, NULL));
 	
 	FILE *f = fopen("RadixTree.txt", "wt"); // Write image to PPM file.
 	for (int i = 0; i < m_shapeCnt - 1; i++) {
@@ -319,8 +319,8 @@ void CLBVH::buildBVHTree()
 #ifdef DEBUG_TREE
 	clFinish(m_cq);
 
-	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
-	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt), btl, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (m_shapeCnt), btl, 0, NULL, NULL));
 	clErrchk(clEnqueueReadBuffer(m_cq, ncBuf, CL_TRUE, 0, sizeof(int) * (m_shapeCnt), nodeCounter, 0, NULL, NULL));	
 
 	FILE *f = fopen("BVHTree.txt", "wt"); // Write image to PPM file.
@@ -374,8 +374,8 @@ void CLBVH::optimize()
 #ifdef DEBUG_TREE
 	clFinish(m_cq);
 
-	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
-	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt), btl, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (m_shapeCnt), btl, 0, NULL, NULL));
 	clErrchk(clEnqueueReadBuffer(m_cq, ncBuf, CL_TRUE, 0, sizeof(int) * (m_shapeCnt), nodeCounter, 0, NULL, NULL));
 #endif
 	clErrchk(clReleaseMemObject(ncBuf));
@@ -383,12 +383,12 @@ void CLBVH::optimize()
 	free(nodeCounter);
 }
 
-void CLBVH::getTrees(BVHTreeNode **ppbtn, BVHTreeNode **ppbtl)
+void CLBVH::getTrees(BVHNodeGPU **ppbtn, BVHNodeGPU **ppbtl)
 {
 	cl_int status;
 
-	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
-	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHTreeNode) * (m_shapeCnt), btl, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
+	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (m_shapeCnt), btl, 0, NULL, NULL));
 	
 	*ppbtn = btn;
 	*ppbtl = btl;

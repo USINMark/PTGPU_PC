@@ -1,5 +1,5 @@
-#ifndef KDNodeGPU
-#define KDNodeGPU
+#ifndef KDNODEGPU_H
+#define KDNODEGPU_H
 
 typedef struct KDNodeGPU {
 	int leaf;
@@ -13,4 +13,4 @@ typedef struct KDNodeGPU {
 	int nShape;
 } KDNodeGPU;
 
-#endif KDNodeGPU
+#endif //KDNODEGPU_H

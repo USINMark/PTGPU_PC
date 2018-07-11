@@ -202,11 +202,11 @@ __constant
 #ifdef GPU_KERNEL
 	__constant
 #endif
-	BVHTreeNode *btn,
+	BVHNodeGPU *btn,
 #ifdef GPU_KERNEL
 	__constant
 #endif
-	BVHTreeNode *btl, 
+	BVHNodeGPU *btl,
 #elif (ACCELSTR == 2)
 #ifdef GPU_KERNEL
 	__constant
@@ -246,7 +246,7 @@ __constant
     // Use stack to traverse BVH to save space (cost is O(height))
     int stack[INTERSECT_STACK_SIZE];
     int topIndex = INTERSECT_STACK_SIZE;
-    stack[--topIndex] = 0; //tn;
+    stack[--topIndex] = 0; //btn;
     int intersected = 0, status = 0;
 
     // Do while stack is not empty
@@ -330,7 +330,6 @@ __constant
 						if (d < *t) {
 							*t = d;
 							*id = kn[i];
-
 						}
 						intersected = 1;
 					}
@@ -362,6 +361,9 @@ __constant
 #endif
 	const Shape *shapes,
 	const unsigned int shapeCnt,
+#ifdef GPU_KERNEL
+	__constant
+#endif
 	const Poi *pois,
 	const unsigned int poiCnt,
 	const Ray *r,
@@ -493,11 +495,11 @@ void RadianceOnePathTracing(
 #ifdef GPU_KERNEL
 	__constant
 #endif
-	BVHTreeNode *btn,
+	BVHNodeGPU *btn,
 #ifdef GPU_KERNEL
 	__constant
 #endif	
-	BVHTreeNode *btl,
+	BVHNodeGPU *btl,
 #elif (ACCELSTR ==2)
 #ifdef GPU_KERNEL
 	__constant
@@ -711,11 +713,11 @@ void RadiancePathTracing(
 #ifdef GPU_KERNEL
 	__constant
 #endif
-	BVHTreeNode *btn,
+	BVHNodeGPU *btn,
 #ifdef GPU_KERNEL
 	__constant
 #endif	
-	BVHTreeNode *btl, 
+	BVHNodeGPU *btl,
 #elif (ACCELSTR == 2)
 #ifdef GPU_KERNEL
 	__constant
@@ -775,11 +777,11 @@ void RadianceDirectLighting(
 #ifdef GPU_KERNEL
 	__constant
 #endif
-	BVHTreeNode *btn,
+	BVHNodeGPU *btn,
 #ifdef GPU_KERNEL
 	__constant
 #endif
-	BVHTreeNode *btl,
+	BVHNodeGPU *btl,
 #elif (ACCELSTR == 2)
 #ifdef GPU_KERNEL
 	__constant

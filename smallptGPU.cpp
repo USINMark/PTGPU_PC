@@ -43,7 +43,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #include "include/CLBVH.h"
-#include "include/KDNode.h"
+#include "include/KDTree.h"
 #include "include/camera.h"
 #include "include/scene.h"
 #include "include/displayfunc.h"
@@ -78,7 +78,7 @@ static cl_kernel kernelBox;
 #if (ACCELSTR == 1)
 static cl_mem btnBuffer;
 static cl_mem btlBuffer;
-BVHTreeNode *btn, *btl;
+BVHNodeGPU *btn, *btl;
 static cl_kernel kernelRad, kernelBvh, kernelOpt;
 char bvhFileName[MAX_FN] = "include\\BVH.cl";
 #elif (ACCELSTR == 2)
@@ -370,6 +370,7 @@ void SetUpOpenCL() {
 
 	if (!deviceFound) {
 		LOGE("Unable to select an appropriate device\n");
+		exit(0);
 		return ;
 	}
 
@@ -446,10 +447,10 @@ void SetUpOpenCL() {
 	clErrchk(clEnqueueWriteBuffer(commandQueue, poiBuffer, CL_TRUE, 0, sizeof(Poi) * poiCnt, pois, 0, NULL, NULL));	
 #if (ACCELSTR == 1)
 	/*------------------------------------------------------------------------*/
-	btnBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(BVHTreeNode) * (shapeCnt-1), NULL, &status);
+	btnBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(BVHNodeGPU) * (shapeCnt-1), NULL, &status);
 	clErrchk(status);
 
-	btlBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(BVHTreeNode) * shapeCnt, NULL, &status);
+	btlBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(BVHNodeGPU) * shapeCnt, NULL, &status);
 	clErrchk(status);
 #elif (ACCELSTR == 2)
 	/*------------------------------------------------------------------------*/
@@ -485,7 +486,7 @@ void SetUpOpenCL() {
 		clErrchk(clGetProgramBuildInfo(program, devices[0], CL_PROGRAM_BUILD_LOG, retValSize, buildLog, NULL));
 		
         buildLog[retValSize] = '\0';		
-#if 0
+#ifdef PTX_ERROR
 		// Query binary (PTX file) size
 		size_t bin_sz;
 		status = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, sizeof(size_t), &bin_sz, NULL);
@@ -507,7 +508,7 @@ void SetUpOpenCL() {
 #endif
 		LOGE("OpenCL Programm Build Log: %s\n", buildLog);
 
-		FILE *fp = fopen("E:\\users\\skkim\\VisualC++\\PTGPU_test\\PTGPU_test\\kernels\\error_renderingkernel.txt", "wt");
+		FILE *fp = fopen("error_renderingkernel.txt", "wt");
 		fwrite(buildLog, sizeof(char), retValSize + 1, fp);
 		fclose(fp);
 
@@ -700,7 +701,7 @@ void DrawBox(int xstart, int ystart, int bwidth, int bheight, int twidth, int th
 
 unsigned int *DrawAllBoxes(int bwidth, int bheight, float *rCPU, bool bFirst) {
 	int startSampleCount = currentSample, nGPU = 0, nCPU = 1, index = 0;
-	bool cpuTurn = true;
+	bool cpuTurn = false;
 	double startTime = WallClockTime(), setStartTime, kernelStartTime;
 	double setTotalTime = 0.0, kernelTotalTime = 0.0, rwTotalTime = 0.0;
 	double cpuTotalTime = 0.0;
@@ -1104,8 +1105,8 @@ void ReInit(const int reallocBuffers) {
 
 	clErrchk(clEnqueueWriteBuffer(commandQueue, cameraBuffer, CL_TRUE, 0, sizeof(Camera), &camera, 0, NULL, NULL));
 #if (ACCELSTR == 1)
-	clErrchk(clEnqueueWriteBuffer(commandQueue, btnBuffer, CL_TRUE, 0, sizeof(BVHTreeNode) * (shapeCnt - 1), btn, 0, NULL, NULL));
-	clErrchk(clEnqueueWriteBuffer(commandQueue, btlBuffer, CL_TRUE, 0, sizeof(BVHTreeNode) * (shapeCnt), btl, 0, NULL, NULL));
+	clErrchk(clEnqueueWriteBuffer(commandQueue, btnBuffer, CL_TRUE, 0, sizeof(BVHNodeGPU) * (shapeCnt - 1), btn, 0, NULL, NULL));
+	clErrchk(clEnqueueWriteBuffer(commandQueue, btlBuffer, CL_TRUE, 0, sizeof(BVHNodeGPU) * (shapeCnt), btl, 0, NULL, NULL));
 #elif (ACCELSTR == 2)
 	clErrchk(clEnqueueWriteBuffer(commandQueue, kngBuffer, CL_TRUE, 0, sizeof(KDNodeGPU) * (szkngbuf), pkngbuf, 0, NULL, NULL));
 	clErrchk(clEnqueueWriteBuffer(commandQueue, knBuffer, CL_TRUE, 0, sizeof(int) * (szknbuf), pknbuf, 0, NULL, NULL));
