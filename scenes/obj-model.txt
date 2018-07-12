@@ -9,7 +9,7 @@ model models/cube.obj  0 10 0  16 16 16  0 0 0  0.4 0.7 0.1  0
 model models/plane-y.obj  0 100 0   100 1 100  0 0 0  0.75 .75 0.75  0
 model models/plane-z.obj  0 70 -60   100 75 1  0 0 0  0.75 .75 0.75  0
 model models/table.obj  27 6 47  16 16 16  0 0 0  0.5 0.2 0  0
-model models/teapot.obj 21 21 40  4 4 4  0 0 0  1 0.9 1  0
+model models/bun_zipper_res3_reduced.obj 24 23 44  1 1 1  0 0 0  1 0.9 1  0
 triangle  10 98 10  -10 98 -10  10 98 -10  20 20 20  0 0 0  0
 triangle  -10 98 10  -10 98 -10  10 98 10  20 20 20  0 0 0  0
 
@@ -24,7 +24,7 @@ model models/half-monkey.obj 24 28 45  8 8 8  0 0 0  1 0.9 1  0
 
 # Bunny
 model models/bun_zipper_res4.obj 24 23 44  2 2 2  0 0 0  1 0.9 1  0
-model models/bun_zipper_res3_changed.obj 24 23 44  1 1 1  0 0 0  1 0.9 1  0
+model models/bun_zipper_res3_reduced.obj 24 23 44  1 1 1  0 0 0  1 0.9 1  0
 
 # Cube
 model models/cube.obj 24 30 45  7 7 7  0 0 0  1 0.9 1  0

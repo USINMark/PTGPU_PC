@@ -27,12 +27,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 
-#define PLYFILE
-#define TINYOBJ_LOADER_C_IMPLEMENTATION
-
-#ifdef PLYFILE
 #include "include\\ply.h"
-#endif
+
+#define TINYOBJ_LOADER_C_IMPLEMENTATION
 
 #ifdef WIN32
 #define _USE_MATH_DEFINES
@@ -131,7 +128,10 @@ int getMaterialType(unsigned int id, int lineIndex) {
 
 const char* ReadFile(size_t* fileLength, const char* fileName) {
 	char *contents;
+
 	FILE *file = fopen(fileName, "rb");
+	if (!file) return NULL;
+
 	fseek(file, 0, SEEK_END);
 	*fileLength = ftell(file);
 	rewind(file);
@@ -155,6 +155,7 @@ bool ReadTxt(char *fileName) {
 	}
 
 	int c;
+
 	// part 1: gamma correction, sky colors
 	c = fscanf(f, "gamma %f  sky1 %f %f %f  sky2 %f %f %f\n", &scene.gammaCorrection,
 		&scene.skyColor1.x, &scene.skyColor1.y, &scene.skyColor1.z,
@@ -248,6 +249,7 @@ bool ReadTxt(char *fileName) {
 	objects = (ObjectTemp *)malloc(sizeof(ObjectTemp) * objectCount);
 	unsigned int addedObjects = 0;
 	int lightCount = 0;
+
 	for (lineIndex = 0; lineIndex < objectCount; lineIndex++) {
 		ObjectTemp *obj = &objects[lineIndex + addedObjects];
 		unsigned int mat;
@@ -303,7 +305,6 @@ bool ReadTxt(char *fileName) {
 			//                   obj->p1.x, obj->p1.y, obj->p1.z, obj->p2.x, obj->p2.y, obj->p2.z, obj->p3.x, obj->p3.y, obj->p3.z, obj->emission.x, obj->emission.y, obj->emission.z, obj->color.x, obj->color.y, obj->color.z, obj->refl);
 			obj->materialId = getMaterialType(mat, lineIndex);
 
-
 			// the area of the circle outside the triangle is (abc)/4area
 			float a, b, c;
 			a = dist(tri->t.p2, tri->t.p1);
@@ -330,6 +331,7 @@ bool ReadTxt(char *fileName) {
 			char modelFilePath[200];
 			Vec modelPosition;
 			Vec modelScale;
+
 			obj->type = MOD;
 			readValuesCount = fscanf(f, "%s  %f %f %f  %f %f %f  %f %f %f  %f %f %f  %d\n", modelFilePath,
 				&modelPosition.x, &modelPosition.y, &modelPosition.z,
@@ -354,6 +356,7 @@ bool ReadTxt(char *fileName) {
 
 			const char* data = ReadFile(&data_len, modelFilePath);
 			if (data == NULL) {
+				LOGE("Error loading obj. Exiting...");
 				exit(-1);
 			}
 
@@ -368,15 +371,16 @@ bool ReadTxt(char *fileName) {
 			//            LOGI("# of shapes    = %d\n", (int)num_shapes);
 			//            LOGI("# of materials = %d\n", (int)num_materials);
 
-
 			unsigned int numTriangles = attrib.num_face_num_verts;
 			printf("Started reading model with %d triangles.\n", numTriangles);
 
 			objects = (ObjectTemp *)realloc(objects, sizeof(ObjectTemp) * (objectCount + addedObjects + numTriangles));
 			LOGI("Reallocated objects to have %d positions.\n", objectCount + addedObjects + numTriangles);
 			obj = &objects[lineIndex + addedObjects];
+
 			unsigned int faceIndex;
 			unsigned int faceOffset = 0;
+
 			for (faceIndex = 0; faceIndex < numTriangles; faceIndex++) { //6, 7
 				ObjectTemp *tri = &objects[lineIndex + addedObjects + faceIndex + 1];
 				//                printf("adding new triangle and saving on position %d.\n", lineIndex + addedObjects + faceIndex  + 1);
@@ -410,12 +414,15 @@ bool ReadTxt(char *fileName) {
 
 				// the area of the circle outside the triangle is (abc)/4area
 				float a, b, c;
+
 				a = dist(tri->t.p2, tri->t.p1);
 				b = dist(tri->t.p3, tri->t.p2);
 				c = dist(tri->t.p1, tri->t.p3);
+
 				Vec e1; vsub(e1, tri->t.p2, tri->t.p1);
 				Vec e2; vsub(e2, tri->t.p3, tri->t.p1);
 				Vec normal; vxcross(normal, e1, e2);
+
 				tri->area = norm(normal) * 0.5f;
 
 				if (!viszero(tri->emission)) {
@@ -448,7 +455,7 @@ bool ReadTxt(char *fileName) {
 		}
 	}
 
-	shapes = (Shape *)malloc(sizeof(Shape) * (shapeCnt + MAX_WALLSUN));
+	shapes = (Shape *)malloc(sizeof(Shape) * (shapeCnt));
 	pois = (Poi *)malloc(sizeof(Poi) * poiCnt);
 	int curPoi = 0, curShape = 0;
 
@@ -560,108 +567,6 @@ bool ReadScene(const char *fileName) {
 }
 
 bool ReadPly(char *fileName) {
-#ifndef PLYFILE
-	FILE *f;
-	int c;
-	unsigned int i;
-	char buf[255];
-
-	LOGI("Reading ply: %s\n", fileName);
-
-	f = fopen(fileName, "r");
-	if (!f) {
-		LOGE("Failed to open file: %s\n", fileName);
-		return false;
-	}
-
-	/* Read the camera position */
-	c = fscanf(f,"camera %f %f %f  %f %f %f\n",
-			   &camera.orig.x, &camera.orig.y, &camera.orig.z,
-			   &camera.target.x, &camera.target.y, &camera.target.z);
-	if (c != 6) {
-		LOGE("Failed to read 6 camera parameters: %d\n", c);
-		return false;
-	}
-
-	/* Read the vertex count */
-	c = fscanf(f,"element vertex %u\n", &poiCnt);
-	if (c != 1) {
-		LOGE("Failed to read vertex count: %d\n", c);
-		return false;
-	}
-	LOGI("Vertex count: %d\n", poiCnt);
-
-	/* Read the face count */
-	c = fscanf(f,"element face %u\n", &shapeCnt);
-	if (c != 1) {
-		LOGE("Failed to read face count: %d\n", c);
-		return false;
-	}
-	LOGI("Face count: %d\n", shapeCnt);
-
-	/* Read all points */
-	pois = (Poi *)malloc(sizeof(Poi) * poiCnt);
-
-	for (i = 0; i < poiCnt; i++) {
-		char *ptr;
-		int j=0;
-		Poi *s = &pois[i];
-		fgets(buf, 255, f);
-
-		ptr = strtok( buf, " ");
-		if (j==0) s->p.x=atof(ptr);
-		j++;
-
-		while( ptr = strtok( NULL, " "))
-		{
-			if (j==1) s->p.y=atof(ptr);
-			else if (j==2) s->p.z=atof(ptr);			
-			/*
-			else if (j==3) s->n.x=atof(ptr);
-			else if (j==4) s->n.y=atof(ptr);
-			else if (j==5) s->n.z=atof(ptr);
-			else if (j==6) s->c.x=atof(ptr);
-			else if (j==7) s->c.y=atof(ptr);
-			else if (j==8) s->c.z=atof(ptr);
-			*/
-			j++;
-		}
-		j=0;
-	}
-
-	/* Read all triangles */
-	shapes = (Shape *)malloc(sizeof(Shape) * (shapeCnt + MAX_WALLSUN));
-
-	for (i = 0; i < shapeCnt; i++) {
-		char *ptr;
-		int j=0;
-		Shape *t = &shapes[i];
-		fgets(buf, 255, f);
-
-		t->type = TRIANGLE;
-		t->t.refl = DIFF;
-
-		ptr = strtok( buf, " ");
-		int ntoken = atoi(ptr);
-
-		while(ntoken--)
-		{
-			ptr = strtok(NULL, " ");
-
-			if (j==0) t->t.p1=atoi(ptr);
-			else if (j==1) t->t.p2=atoi(ptr);
-			else if (j==2) t->t.p3=atoi(ptr);
-			//else if (j==3) t->e.x=atof(ptr);
-			//else if (j==4) t->e.y=atof(ptr);
-			//else if (j==5) t->e.z=atof(ptr);
-
-			j++;
-		}
-		j=0;
-	}
-
-	fclose(f);
-#else
 	typedef struct Face {
 		unsigned char intensity; /* this user attaches intensity to faces */
 		unsigned char nverts;    /* number of vertex indices in list */
@@ -777,7 +682,6 @@ bool ReadPly(char *fileName) {
 
 	/* close the PLY file */
 	ply_close(ply);
-#endif
 
 	return true;
 }
