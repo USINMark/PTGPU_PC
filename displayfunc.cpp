@@ -114,9 +114,9 @@ double WallClockTime()
 
 int getMaterialType(unsigned int id, int lineIndex) {
 	switch (id) {
-	case 0: return LAMBERTIAN;
-	case 1: return CONDUCTOR;
-	case 2: return DIELECTRIC;
+	case 0: return LAMBERTIAN; // DIFFUSE
+	case 1: return CONDUCTOR; // SPECULAR
+	case 2: return DIELECTRIC; // REFRACTION
 	case 3: return MATTE;
 	case 4: return PLASTIC;
 	case 5: return METAL;
@@ -278,6 +278,7 @@ bool ReadTxt(char *fileName) {
 			}
 
 			obj->materialId = getMaterialType(mat, lineIndex);
+
 			LOGI("Sphere material id: %d\n", obj->materialId);
 			obj->area = 4 * FLOAT_PI * obj->s.radius*obj->s.radius;
 
@@ -307,9 +308,11 @@ bool ReadTxt(char *fileName) {
 
 			// the area of the circle outside the triangle is (abc)/4area
 			float a, b, c;
+
 			a = dist(tri->t.p2, tri->t.p1);
 			b = dist(tri->t.p3, tri->t.p2);
 			c = dist(tri->t.p1, tri->t.p3);
+
 			Vec e1; vsub(e1, tri->t.p2, tri->t.p1);
 			Vec e2; vsub(e2, tri->t.p3, tri->t.p1);
 			Vec normal; vxcross(normal, e1, e2);
@@ -470,8 +473,12 @@ bool ReadTxt(char *fileName) {
 			shapes[curShape].s.rad = obj->s.radius;
 			shapes[curShape].e = obj->emission;
 			shapes[curShape].c = obj->color;
+			
+			if (obj->materialId == LAMBERTIAN) shapes[curShape].refl = DIFF;
+			else if (obj->materialId == CONDUCTOR) shapes[curShape].refl = SPEC;
+			else if (obj->materialId == DIELECTRIC) shapes[curShape].refl = REFR;
+			else shapes[curShape].refl = DIFF;
 
-			shapes[curShape].refl = DIFF;
 			shapes[curShape].area = obj->area;
 			curShape++;
 		}
@@ -488,7 +495,11 @@ bool ReadTxt(char *fileName) {
 			shapes[curShape].e = obj->emission;
 			shapes[curShape].c = obj->color;
 
-			shapes[curShape].refl = DIFF;
+			if (obj->materialId == LAMBERTIAN) shapes[curShape].refl = DIFF;
+			else if (obj->materialId == CONDUCTOR) shapes[curShape].refl = SPEC;
+			else if (obj->materialId == DIELECTRIC) shapes[curShape].refl = REFR;
+			else shapes[curShape].refl = DIFF;
+
 			shapes[curShape].area = obj->area;
 			curShape++;
 		}
