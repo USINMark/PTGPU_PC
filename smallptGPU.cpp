@@ -1168,28 +1168,10 @@ void motionFunc(int x, int y) {
 	if (deltaX != 0 || deltaY != 0) {
 		// rotate the camera using pitch (nodding movement) and yaw (nonono movement)
 		if (mouseButton == GLUT_LEFT_BUTTON) {
-			Vec t = camera.target;
-			vsub(t, t, camera.orig);
-			
-			if (deltaX < 0) {
-				t.x = t.x * cos(ROTATE_STEP) - t.z * sin(ROTATE_STEP);
-				t.z = t.x * sin(ROTATE_STEP) + t.z * cos(ROTATE_STEP); 
-			}
-			else {
-				t.x = t.x * cos(-ROTATE_STEP) - t.z * sin(-ROTATE_STEP);
-				t.z = t.x * sin(-ROTATE_STEP) + t.z * cos(-ROTATE_STEP);
-			}
-			if (deltaY < 0) {
-				t.y = t.y * cos(ROTATE_STEP) + t.z * sin(ROTATE_STEP);
-				t.z = -t.y * sin(ROTATE_STEP) + t.z * cos(ROTATE_STEP);
-			}
-			else {
-				t.y = t.y * cos(-ROTATE_STEP) + t.z * sin(-ROTATE_STEP);
-				t.z = -t.y * sin(-ROTATE_STEP) + t.z * cos(-ROTATE_STEP); 
-			}
-
-			vadd(t, t, camera.orig);
-			camera.target = t;
+			camera.yaw += deltaX * 0.01;
+			camera.yaw = camera.yaw - TWO_PI * floor(camera.yaw / TWO_PI);
+			camera.pitch += -deltaY * 0.01;
+			camera.pitch = clamp(camera.pitch, -PI_OVER_TWO, PI_OVER_TWO);
 		}
 
 		glutSetCursor(GLUT_CURSOR_CROSSHAIR);
@@ -1293,43 +1275,27 @@ void keyFunc(unsigned char key, int x, int y) {
 
 void specialFunc(int key, int x, int y) {
 	switch (key) {
-	case GLUT_KEY_UP: {
-		Vec t = camera.target;
-		vsub(t, t, camera.orig);
-		t.y = t.y * cos(-ROTATE_STEP) + t.z * sin(-ROTATE_STEP);
-		t.z = -t.y * sin(-ROTATE_STEP) + t.z * cos(-ROTATE_STEP);
-		vadd(t, t, camera.orig);
-		camera.target = t;
+	case GLUT_KEY_UP: {		
+		camera.pitch += -0.01;
+		camera.pitch = clamp(camera.pitch, -PI_OVER_TWO, PI_OVER_TWO);
 		ReInit(0);
 		break;
 	}
 	case GLUT_KEY_DOWN: {
-		Vec t = camera.target;
-		vsub(t, t, camera.orig);
-		t.y = t.y * cos(ROTATE_STEP) + t.z * sin(ROTATE_STEP);
-		t.z = -t.y * sin(ROTATE_STEP) + t.z * cos(ROTATE_STEP);
-		vadd(t, t, camera.orig);
-		camera.target = t;
+		camera.pitch += 0.01;
+		camera.pitch = clamp(camera.pitch, -PI_OVER_TWO, PI_OVER_TWO);
 		ReInit(0);
 		break;
 	}
 	case GLUT_KEY_LEFT: {
-		Vec t = camera.target;
-		vsub(t, t, camera.orig);
-		t.x = t.x * cos(-ROTATE_STEP) - t.z * sin(-ROTATE_STEP);
-		t.z = t.x * sin(-ROTATE_STEP) + t.z * cos(-ROTATE_STEP);
-		vadd(t, t, camera.orig);
-		camera.target = t;
+		camera.yaw += 0.01;
+		camera.yaw = camera.yaw - TWO_PI * floor(camera.yaw / TWO_PI);
 		ReInit(0);
 		break;
 	}
 	case GLUT_KEY_RIGHT: {
-		Vec t = camera.target;
-		vsub(t, t, camera.orig);
-		t.x = t.x * cos(ROTATE_STEP) - t.z * sin(ROTATE_STEP);
-		t.z = t.x * sin(ROTATE_STEP) + t.z * cos(ROTATE_STEP);
-		vadd(t, t, camera.orig);
-		camera.target = t;
+		camera.yaw += -0.01;
+		camera.yaw = camera.yaw - TWO_PI * floor(camera.yaw / TWO_PI);
 		ReInit(0);
 		break;
 	}
