@@ -55,18 +55,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "include/tinyobj_loader_c.h"
 
 typedef struct {
-	// values defined by the scene/user interaction
-	Vec orig, target;
-	// values used to facilitate interaction
-	float pitch, yaw;
-	// resolution in pixels
-	float width, height;
-
-	// values calculated from orig/target (direction, x and y basis vectors)
-	Vec dir, x, y;
-} CameraTemp;
-
-typedef struct {
 	float gammaCorrection;
 	Vec skyColor1, skyColor2;
 	unsigned int materialCount;
@@ -157,7 +145,6 @@ const char* ReadFile(size_t* fileLength, const char* fileName) {
 bool ReadTxt(char *fileName) {
 	int objectCount = 0;
 	ObjectTemp *objects;
-	CameraTemp ct;
 
 	LOGI("Reading scene: %s\n", fileName);
 
@@ -183,10 +170,10 @@ bool ReadTxt(char *fileName) {
 		&camera.orig.x, &camera.orig.y, &camera.orig.z,
 		&camera.target.x, &camera.target.y, &camera.target.z);
 
-	ct.pitch = 0;
-	ct.yaw = 0;
-	ct.width = width;
-	ct.height = height;
+	camera.pitch = 0;
+	camera.yaw = 0;
+	camera.width = width;
+	camera.height = height;
 
 	if (c != 6) {
 		LOGE("Failed to read 6 camera parameters: %d\n", c);

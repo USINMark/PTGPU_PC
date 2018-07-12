@@ -1116,6 +1116,15 @@ void ReInit(const int reallocBuffers) {
 }
 
 #ifdef WIN32
+static int mouseX = 0, mouseY = 0;
+static int mouseButton = 0;
+
+#define TWO_PI 6.28318530717958647693f
+#define PI_OVER_TWO 1.57079632679489661923f
+
+#define MOVE_STEP 10.0f
+#define ROTATE_STEP (1.f * M_PI / 180.f)
+
 void idleFunc(void) {
 	glutPostRedisplay();
 }
@@ -1149,8 +1158,59 @@ void reshapeFunc(int newWidth, int newHeight) {
 	glutPostRedisplay();
 }
 
-#define MOVE_STEP 10.0f
-#define ROTATE_STEP (2.f * M_PI / 180.f)
+/// gets the current mouse position and compares to the last one to check if
+/// we need to change the pitch/yaw of the camera
+/// it only changes the camera if the mouse button is pressed
+void motionFunc(int x, int y) {
+	int deltaX = mouseX - x;
+	int deltaY = mouseY - y;
+
+	if (deltaX != 0 || deltaY != 0) {
+		// rotate the camera using pitch (nodding movement) and yaw (nonono movement)
+		if (mouseButton == GLUT_LEFT_BUTTON) {
+			Vec t = camera.target;
+			vsub(t, t, camera.orig);
+			
+			if (deltaX < 0) {
+				t.x = t.x * cos(ROTATE_STEP) - t.z * sin(ROTATE_STEP);
+				t.z = t.x * sin(ROTATE_STEP) + t.z * cos(ROTATE_STEP); 
+			}
+			else {
+				t.x = t.x * cos(-ROTATE_STEP) - t.z * sin(-ROTATE_STEP);
+				t.z = t.x * sin(-ROTATE_STEP) + t.z * cos(-ROTATE_STEP);
+			}
+			if (deltaY < 0) {
+				t.y = t.y * cos(ROTATE_STEP) + t.z * sin(ROTATE_STEP);
+				t.z = -t.y * sin(ROTATE_STEP) + t.z * cos(ROTATE_STEP);
+			}
+			else {
+				t.y = t.y * cos(-ROTATE_STEP) + t.z * sin(-ROTATE_STEP);
+				t.z = -t.y * sin(-ROTATE_STEP) + t.z * cos(-ROTATE_STEP); 
+			}
+
+			vadd(t, t, camera.orig);
+			camera.target = t;
+		}
+
+		glutSetCursor(GLUT_CURSOR_CROSSHAIR);
+
+		mouseX = x;
+		mouseY = y;
+		ReInit(0);
+	}
+	else {
+		glutSetCursor(GLUT_CURSOR_INHERIT);
+	}
+}
+
+/// simply records the mouse state
+void mouseFunc(int button, int state, int x, int y) {
+	mouseButton = button;
+	mouseX = x;
+	mouseY = y;
+
+	motionFunc(x, y);
+}
 
 void keyFunc(unsigned char key, int x, int y) {
 	switch (key) {
@@ -1293,12 +1353,18 @@ void InitGlut(int argc, char *argv[], char *windowTittle) {
 	glutInit(&argc, argv);
 
 	glutCreateWindow(windowTittle);
-
+	
 	glutReshapeFunc(reshapeFunc);
+	glutMouseFunc(mouseFunc);
+	glutMotionFunc(motionFunc);
 	glutKeyboardFunc(keyFunc);
 	glutSpecialFunc(specialFunc);
 	glutDisplayFunc(displayFunc);
 	glutIdleFunc(idleFunc);
+
+	glViewport(0, 0, width, height);
+	glLoadIdentity();
+	glOrtho(0.f, width - 1.f, 0.f, height - 1.f, -1.f, 1.f);
 }
 
 int main(int argc, char *argv[]) {
@@ -1348,14 +1414,24 @@ int main(int argc, char *argv[]) {
 	}
 	else
 	{
-		fprintf(stderr, "Usage: %s\n", argv[0]);
-		fprintf(stderr, "Usage: %s <use CPU/GPU device (0=CPU or 1=GPU)> <workgroup size (0=default value or anything > 0 and power of 2)> <kernel file name> <window width> <window height> <scene file>\n", argv[0]);
+		LOGE("Usage: %s\n", argv[0]);
+		LOGE("Usage: %s <use CPU/GPU device (0=CPU or 1=GPU)> <workgroup size (0=default value or anything > 0 and power of 2)> <kernel file name> <window width> <window height> <scene file>\n", argv[0]);
 	
 		exit(-1);
 	}
 	
     /*------------------------------------------------------------------------*/
 	InitGlut(argc, argv, (char *)"SmallPT GPU V1.6alpha (Written by David Bucciarelli)");
+	
+	LOGI("Acceleration for intersection test: ");
+#if (ACCELSTR == 0)
+	LOGI("No Accel\n");
+#elif (ACCELSTR == 1)
+	LOGI("BVH\n");
+#elif (ACCELSTR == 2)
+	LOGI("KDTree\n");
+#endif	
+
 	glutMainLoop();
 
     return 0;

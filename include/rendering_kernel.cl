@@ -1,31 +1,6 @@
 
 #include "clheader.h"
 
-#define ACCELSTR 0 //0 is no accel, 1 is BVH and 2 is KDTREE
-//#define DEBUG_INTERSECTIONS
-
-# 1 "<stdin>"
-# 1 "<built-in>"
-# 1 "<command-line>"
-# 1 "<stdin>"
-# 26 "<stdin>"
-# 1 "camera.h" 1
-# 27 "camera.h"
-# 1 "vec.h" 1
-# 27 "vec.h"
-
-# 28 "camera.h" 2
-
-# 27 "<stdin>" 2
-# 1 "geomfunc.h" 1
-# 27 "geomfunc.h"
-# 1 "geom.h" 1
-# 32 "geom.h"
-
-# 28 "geomfunc.h" 2
-# 1 "simplernd.h" 1
-# 34 "simplernd.h"
-
 inline float min2(float a, float b) {
     //return (a < b) ? a : b;
 	return fmin(a, b);
@@ -50,7 +25,6 @@ inline float GetRandom(unsigned int *seed0, unsigned int *seed1) {
 
  return (res.f - 2.f) / 2.f;
 }
-# 29 "geomfunc.h" 2
 
 inline void swap(float *a, float *b)
 {
@@ -170,7 +144,7 @@ void UniformSampleSphere(const float u1, const float u2, Vec *v) {
  vinit(*v, xx, yy, zz);
  //{ (*v).x = xx; (*v).y = yy; (*v).z = zz; };
 }
-
+ 
 /**
  * Test if a ray intersect a bound
  */
@@ -1084,7 +1058,6 @@ __constant
   }
  }
 }
-# 28 "<stdin>" 2
 
 void GenerateCameraRay(
  __constant  Camera *camera,

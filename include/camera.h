@@ -29,9 +29,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 typedef struct {
 	/* User defined values */
 	Vec orig, target;
+	// values used to facilitate interaction
+	float pitch, yaw;
+	// resolution in pixels
+	float width, height;
 	/* Calculated values */
 	Vec dir, x, y;
 } Camera;
+
+#define HARD_CODED_CAMERA_FOV 45.f
 
 #endif	/* _CAMERA_H */
 
