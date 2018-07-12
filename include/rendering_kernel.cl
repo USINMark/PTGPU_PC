@@ -1,6 +1,6 @@
 
 #include "clheader.h"
-
+ 
 inline float min2(float a, float b) {
     //return (a < b) ? a : b;
 	return fmin(a, b);

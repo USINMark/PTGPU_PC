@@ -1421,7 +1421,7 @@ int main(int argc, char *argv[]) {
 	}
 	
     /*------------------------------------------------------------------------*/
-	InitGlut(argc, argv, (char *)"SmallPT GPU V1.6alpha (Written by David Bucciarelli)");
+	InitGlut(argc, argv, (char *)"SmallPTGPU (Added the BVH and KDTree for the intersection tests)");
 	
 	LOGI("Acceleration for intersection test: ");
 #if (ACCELSTR == 0)
