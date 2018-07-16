@@ -1,6 +1,7 @@
 
 #include "stdafx.h"
 #include "include\\CLBVH.h"
+#include "include\\AccelCommon.h"
 
 #define BLOCK_SIZE 256
 
@@ -16,36 +17,6 @@ inline void clAssert(cl_int code, const char *file, int line)
 	{
 		LOGI("clAssert: %d %s %d\n", code, file, line);
 	}
-}
-
-inline int min2(int a, int b)
-{
-	return (a < b) ? a : b;
-}
-
-inline int max2(int a, int b)
-{
-	return (a > b) ? a : b;
-}
-
-inline float min2(float a, float b)
-{
-	return (a < b) ? a : b;
-}
-
-inline float max2(float a, float b)
-{
-	return (a > b) ? a : b;
-}
-
-inline float min3(float a, float b, float c)
-{
-	return min2(min2(a, b), c);
-}
-
-inline float max3(float a, float b, float c)
-{
-	return max2(max2(a, b), c);
 }
 
 inline void swapGeometry(Geometry *a, Geometry *b)

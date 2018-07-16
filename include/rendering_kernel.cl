@@ -1069,7 +1069,7 @@ void GenerateCameraRay(
  const float r2 = GetRandom(seed0, seed1) - .5f;
  const float kcx = (x + r1) * invWidth - .5f;
  const float kcy = (y + r2) * invHeight - .5f;
-
+ 
  Vec rdir;
   vinit(rdir,
  		camera->x.x * kcx + camera->y.x * kcy + camera->dir.x,
@@ -1088,7 +1088,7 @@ void GenerateCameraRay(
  rinit(*ray, rorig, rdir);
  //{ { ((*ray).o).x = (rorig).x; ((*ray).o).y = (rorig).y; ((*ray).o).z = (rorig).z; }; { ((*ray).d).x = (rdir).x; ((*ray).d).y = (rdir).y; ((*ray).d).z = (rdir).z; }; };
 }
-
+ 
 __kernel void RadianceGPU(
     __global Vec *colors, __global unsigned int *seedsInput,
  __constant Shape *shapes, 
@@ -1102,7 +1102,7 @@ __kernel void RadianceGPU(
  __constant BVHNodeGPU *btl, 
 #elif (ACCELSTR == 2)
 __constant
- 
+
  KDNodeGPU *kng, 
 __constant
 

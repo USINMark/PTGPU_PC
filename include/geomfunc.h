@@ -25,7 +25,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define	_GEOMFUNC_H
 
 #include "geom.h"
-//#include "KDTree.h"
 #include "simplernd.h"
 
 #ifndef SMALLPT_GPU

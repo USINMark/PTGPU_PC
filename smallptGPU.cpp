@@ -56,6 +56,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define M_PI       3.14159265358979323846 
 
 bool Read(char *fileName, bool *walllight);
+#else 
+#include <android/asset_manager.h>
 #endif
 
 #ifdef EXP_KERNEL
@@ -91,6 +93,10 @@ int szknbuf;
 #endif
 
 #define MAX_STYPE 255
+#define MAX_INCLUDE 255
+#define MAX_ERROR 255
+#define MAX_LOG 255
+//#define PTX_ERROR
 
 /* OpenCL variables */
 static cl_context context;
@@ -106,7 +112,7 @@ static int currentSample = 0;
 int useGPU = 1;
 int forceWorkSize = 0;
 
-unsigned int workGroupSize = 1, shapeCnt = 0, poiCnt = 0, lightCnt = 0;;
+unsigned int workGroupSize = 1, shapeCnt = 0, poiCnt = 0, lightCnt = 0;
 int pixelCount;
 Camera camera;
 Shape *shapes;
@@ -473,7 +479,12 @@ void SetUpOpenCL() {
 	program = clCreateProgramWithSource(context, 1, &sources, NULL, &status);
 	clErrchk(status);
 
-	status = clBuildProgram(program, 1, devices, "-I. ", NULL, NULL);
+	char strInclude[MAX_INCLUDE];
+	strcpy(strInclude, "-DGPU_KERNEL -I. ");
+	//strcat(strInclude, strResPath);
+	//strcat(strInclude, "/include");
+
+	status = clBuildProgram(program, 1, devices, strInclude, NULL, NULL);
 	clErrchk(status);
 
 	if (status != CL_SUCCESS) {
@@ -508,7 +519,11 @@ void SetUpOpenCL() {
 #endif
 		LOGE("OpenCL Programm Build Log: %s\n", buildLog);
 
-		FILE *fp = fopen("error_renderingkernel.txt", "wt");
+		char strError[MAX_ERROR];
+		strcpy(strError, "");
+		strcat(strError, "error_renderingkernel.txt");
+
+		FILE *fp = fopen(strError, "wt");
 		fwrite(buildLog, sizeof(char), retValSize + 1, fp);
 		fclose(fp);
 
@@ -539,7 +554,12 @@ void SetUpOpenCL() {
 	program = clCreateProgramWithSource(context, 1, &sourcesBvh, NULL, &status);
 	clErrchk(status);
 
-	status = clBuildProgram(program, 1, devices, "-I. ", NULL, NULL);
+    //char strInclude[MAX_INCLUDE];
+    strcpy(strInclude, "-DGPU_KERNEL -I. ");
+    //strcat(strInclude, strResPath);
+    //strcat(strInclude, "/include");
+
+	status = clBuildProgram(program, 1, devices, strInclude, NULL, NULL);
 	clErrchk(status);
 
 	if (status != CL_SUCCESS) {
@@ -574,7 +594,11 @@ void SetUpOpenCL() {
 #endif
 		LOGE("OpenCL Programm Build Log: %s\n", buildLog);
 
-		FILE *fp = fopen("error_BVH.txt", "wt");
+		char strError[MAX_ERROR];
+		//strcpy(strError, strResPath);
+		strcat(strError, "error_BVH.txt");
+
+		FILE *fp = fopen(strError, "wt");
 		fwrite(buildLog, sizeof(char), retValSize + 1, fp);
 		fclose(fp);
 
@@ -664,7 +688,7 @@ void DrawBox(int xstart, int ystart, int bwidth, int bheight, int twidth, int th
 			const Ray ray = { rorig, rdir };
 
 			Vec r;
-			r.x = r.y = r.z = 0.0f;
+			r.x = r.y = r.z = 1.0f;
 
 			RadiancePathTracing(shapes, shapeCnt, pois, poiCnt, lightCnt, 
 #if (ACCELSTR == 1)
@@ -1056,7 +1080,11 @@ unsigned int *DrawFrame() {
 	clErrchk(clEnqueueReadBuffer(commandQueue, debugBuffer1, CL_TRUE, 0, sizeof(int) * shapeCnt, debug1, 0, NULL, NULL));
 	clErrchk(clEnqueueReadBuffer(commandQueue, debugBuffer2, CL_TRUE, 0, 6 * sizeof(float) * shapeCnt, debug2, 0, NULL, NULL));
 
-    FILE *f = fopen("images\\intersections.txt", "wt"); // Write image to PPM file.
+	char strLog[MAX_LOG];
+	strcpy(strLog, strResPath);
+	strcat(strLog, "/intersections.txt");
+
+    FILE *f = fopen(strLog, "wt"); // Write image to PPM file.
 	for(int i = 0; i < shapeCnt; i++) {
 		fprintf(f, "%d, ", debug1[i]);
 	}

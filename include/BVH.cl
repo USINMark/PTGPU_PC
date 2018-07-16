@@ -138,7 +138,7 @@ int longestCommonPrefix(int i, int j, int len)
  * Algorithm described in karras2012 paper.
  * Node-wise parallel
  */
- __kernel void kernelConstructRadixTree(int len, __global BVHTreeNode *radixTreeNodes, __global BVHTreeNode *radixTreeLeaves) 
+ __kernel void kernelConstructRadixTree(int len, __global BVHNodeGPU *radixTreeNodes, __global BVHNodeGPU *radixTreeLeaves) 
 {
     int i = get_global_id(0);
 
@@ -183,7 +183,7 @@ int longestCommonPrefix(int i, int j, int len)
     int gamma = i + s * d + min2_i(d, 0);
 
     // Output child pointers
-    __global BVHTreeNode *current = radixTreeNodes + i;
+    __global BVHNodeGPU *current = radixTreeNodes + i;
 
     if (min2_i(i, j) == gamma) {
         current->nLeft = gamma;
@@ -211,13 +211,13 @@ int longestCommonPrefix(int i, int j, int len)
  * BVH Construction kernel
  * Algorithm described in karras2012 paper (bottom-up approach).
  */
-__kernel void kernelConstructBVHTree(int len, __global BVHTreeNode *treeNodes, __global BVHTreeNode *treeLeaves, __global int *nodeCounter, __constant int *sorted_geometry_indices, __global Shape *shapes) 
+__kernel void kernelConstructBVHTree(int len, __global BVHNodeGPU *treeNodes, __global BVHNodeGPU *treeLeaves, __global int *nodeCounter, __constant int *sorted_geometry_indices, __global Shape *shapes) 
 {
     int index = get_global_id(0);
     
     if (index >= len) return;
 
-    __global BVHTreeNode *leaf = &treeLeaves[index];
+    __global BVHNodeGPU *leaf = &treeLeaves[index];
 
     // Handle leaf first
     int geometry_index = sorted_geometry_indices[index];
@@ -225,7 +225,7 @@ __kernel void kernelConstructBVHTree(int len, __global BVHTreeNode *treeNodes, _
 	leaf->bound = shapes[geometry_index].b;
 	leaf->nShape = geometry_index;
 	
-	__global BVHTreeNode *current = &treeNodes[leaf->nParent];
+	__global BVHNodeGPU *current = &treeNodes[leaf->nParent];
 
 	int currentIndex = leaf->nParent;
 	int res = atomic_add(nodeCounter + currentIndex, 1);
@@ -257,7 +257,7 @@ __kernel void kernelConstructBVHTree(int len, __global BVHTreeNode *treeNodes, _
     }
 }
 
-float get_total_area(int n, int *leaves, __global BVHTreeNode *treeNodes, unsigned s) 
+float get_total_area(int n, int *leaves, __global BVHNodeGPU *treeNodes, unsigned s) 
 {
     float lmin_x, lmin_y, lmin_z, lmax_x, lmax_y, lmax_z;
     float min_x = FLT_MAX;
@@ -288,7 +288,7 @@ float get_total_area(int n, int *leaves, __global BVHTreeNode *treeNodes, unsign
     return getArea(min_x, max_x, min_y, max_y, min_z, max_z);
 }
 
-void calculateOptimalTreelet(int n, int *leaves, __global BVHTreeNode *treeNodes, unsigned char *p_opt) 
+void calculateOptimalTreelet(int n, int *leaves, __global BVHNodeGPU *treeNodes, unsigned char *p_opt) 
 {
     int num_subsets = (float) pow((float)2, (float)n) - 1;
 	
@@ -332,10 +332,10 @@ void calculateOptimalTreelet(int n, int *leaves, __global BVHTreeNode *treeNodes
     }
 }
 
-void restructTree(int root, __global BVHTreeNode *treeNodes, int *leaves, int *nodes, unsigned char partition, unsigned char *optimal, int index, int left, int num_leaves) 
+void restructTree(int root, __global BVHNodeGPU *treeNodes, int *leaves, int *nodes, unsigned char partition, unsigned char *optimal, int index, int left, int num_leaves) 
 {
 	int nParent = root;
-	__global BVHTreeNode *parent = &treeNodes[root];
+	__global BVHNodeGPU *parent = &treeNodes[root];
     PartitionEntry stack[RESTRUCT_STACK_SIZE];
     int topIndex = RESTRUCT_STACK_SIZE;
     PartitionEntry tmp = {partition, left, root};
@@ -354,7 +354,7 @@ void restructTree(int root, __global BVHTreeNode *treeNodes, int *leaves, int *n
             // Leaf
             int leaf_index = __ffs(partition) - 1;
 
-            __global BVHTreeNode *leaf = &treeNodes[leaves[leaf_index]];
+            __global BVHNodeGPU *leaf = &treeNodes[leaves[leaf_index]];
             if (left) {
 				parent->nLeft = leaf_index;
             } else {
@@ -365,7 +365,7 @@ void restructTree(int root, __global BVHTreeNode *treeNodes, int *leaves, int *n
             // Internal node
 
 #if 0
-            __global BVHTreeNode *node = &treeNodes[nodes[index++]];
+            __global BVHNodeGPU *node = &treeNodes[nodes[index++]];
 
             // Set cost to 0 as a mark
             node->cost = 0.0;
@@ -397,7 +397,7 @@ void restructTree(int root, __global BVHTreeNode *treeNodes, int *leaves, int *n
  * treeletOptimize
  * Find the treelet and optimize
  */
-void treeletOptimize(int root, __global BVHTreeNode *treeNodes) 
+void treeletOptimize(int root, __global BVHNodeGPU *treeNodes) 
 {
     // Don't need to optimize if root is a leaf
     if (treeNodes[root].leaf == 1) return;
@@ -470,11 +470,11 @@ void treeletOptimize(int root, __global BVHTreeNode *treeNodes)
 	treeNodes[root].cost = Ci * treeNodes[root].area + treeNodes[treeNodes[root].nLeft].cost + treeNodes[treeNodes[root].nRight].cost;
 }
 
-void propagateAreaCost(int nParent, __global BVHTreeNode *treeNodes, int *leaves, int num_leaves) 
+void propagateAreaCost(int nParent, __global BVHNodeGPU *treeNodes, int *leaves, int num_leaves) 
 {
 
     for (int i = 0; i < num_leaves; i++) {
-        __global BVHTreeNode *cur = &treeNodes[leaves[i]];
+        __global BVHNodeGPU *cur = &treeNodes[leaves[i]];
 		cur = &treeNodes[cur->nParent];
 		
 		while (cur->nParent != nParent) {
@@ -511,7 +511,7 @@ void propagateAreaCost(int nParent, __global BVHTreeNode *treeNodes, int *leaves
 /**
  * BVH Optimization kernel
  */
-__kernel void kernelOptimize(int num_leaves, __global int *nodeCounter, __global BVHTreeNode *treeNodes, __global BVHTreeNode *treeLeaves) 
+__kernel void kernelOptimize(int num_leaves, __global int *nodeCounter, __global BVHNodeGPU *treeNodes, __global BVHNodeGPU *treeLeaves) 
 {
     int index = get_global_id(0);
     
