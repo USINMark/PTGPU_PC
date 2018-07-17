@@ -29,15 +29,14 @@ private:
 
 	BVHNodeGPU *btn, *btl;
 	
-	unsigned int m_poiCnt, m_shapeCnt;
-	Poi *m_pois;
+	unsigned int m_shapeCnt;
 	Shape *m_shapes;
 
 	Bound getBound(Sphere s);
 	Bound getBound(Triangle t);
 
 public:
-	CLBVH(Shape *shapes, int shapeCnt, Poi *pois, int poiCnt, cl_command_queue cq, cl_context ctx, cl_kernel kRad, cl_kernel kBvh, cl_kernel kOpt);
+	CLBVH(Shape *shapes, int shapeCnt, cl_command_queue cq, cl_context ctx, cl_kernel kRad, cl_kernel kBvh, cl_kernel kOpt);
 	~CLBVH();
 
 	void buildRadixTree();

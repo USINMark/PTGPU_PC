@@ -84,8 +84,7 @@ extern void UpdateCamera();
 
 extern Camera camera;
 extern Shape *shapes;
-extern Poi *pois;
-extern unsigned int shapeCnt, poiCnt;
+extern unsigned int shapeCnt;
 extern unsigned int lightCnt;
 
 int amiSmallptCPU;
@@ -446,6 +445,8 @@ bool ReadTxt(char *fileName) {
 	
 	fclose(f);
 
+	unsigned int poiCnt = 0;
+
 	for (int i = 0; i < objectCount; i++)
 	{
 		ObjectTemp *obj = &objects[i];
@@ -459,8 +460,7 @@ bool ReadTxt(char *fileName) {
 	}
 
 	shapes = (Shape *)malloc(sizeof(Shape) * (shapeCnt));
-	pois = (Poi *)malloc(sizeof(Poi) * poiCnt);
-	int curPoi = 0, curShape = 0;
+	int curShape = 0;
 
 	for (int i = 0; i < objectCount; i++)
 	{
@@ -484,14 +484,10 @@ bool ReadTxt(char *fileName) {
 		}
 		else if (obj->type == TRI)
 		{
-			pois[curPoi++].p = obj->t.p1;
-			pois[curPoi++].p = obj->t.p2;
-			pois[curPoi++].p = obj->t.p3;
-
 			shapes[curShape].type = TRIANGLE;
-			shapes[curShape].t.p1 = curPoi - 3;
-			shapes[curShape].t.p2 = curPoi - 2;
-			shapes[curShape].t.p3 = curPoi - 1;
+			shapes[curShape].t.p1 = obj->t.p1;// curPoi - 3;
+			shapes[curShape].t.p2 = obj->t.p2;// curPoi - 2;
+			shapes[curShape].t.p3 = obj->t.p3;// curPoi - 1;
 			shapes[curShape].e = obj->emission;
 			shapes[curShape].c = obj->color;
 
@@ -627,9 +623,11 @@ bool ReadPly(char *fileName) {
 	LOGI("version %f\n", version);
 	LOGI("type %d\n", file_type);
 
+	unsigned int poiCnt = 0;
+	Poi* pois;
+
 	/* go through each kind of element that we learned is in the file */
 	/* and read them */
-
 	for (i = 0; i < nelems; i++) {
 		/* get the description of the first element */
 		elem_name = elist[i];
@@ -681,9 +679,9 @@ bool ReadPly(char *fileName) {
 
 				shapes[j].type = TRIANGLE;
 				shapes[j].refl = DIFF;
-				shapes[j].t.p1 = flist[j]->verts[0];
-				shapes[j].t.p2 = flist[j]->verts[1];
-				shapes[j].t.p3 = flist[j]->verts[2];
+				shapes[j].t.p1 = pois[flist[j]->verts[0]].p;
+				shapes[j].t.p2 = pois[flist[j]->verts[1]].p;
+				shapes[j].t.p3 = pois[flist[j]->verts[2]].p;
 
 				free(flist[j]);
 			}

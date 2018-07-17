@@ -83,13 +83,8 @@ float TriangleIntersect(
 	__constant
 #endif
 	const Triangle *tr,
-#ifdef GPU_KERNEL
-	__constant
-#endif
-	const Poi *pois,
-	const unsigned int poiCnt,
 	const Ray *r) { /* returns distance, 0 if nohit */
-	Vec v0 = pois[tr->p1].p, v1 = pois[tr->p2].p, v2 = pois[tr->p3].p, e1, e2, tvec, pvec, qvec;
+	Vec v0 = tr->p1, v1 = tr->p2, v2 = tr->p3, e1, e2, tvec, pvec, qvec;
 	float t = 0.0f, u, v;
 	double det, inv_det;
 
@@ -192,11 +187,6 @@ __constant
 #endif
 	const Shape *shapes,
 	const unsigned int shapeCnt,
-#ifdef GPU_KERNEL
-	__constant
-#endif
-	const Poi *pois,
-	const unsigned int poiCnt,
 #if (ACCELSTR == 1)
 #ifdef GPU_KERNEL
 	__constant
@@ -230,7 +220,7 @@ __constant
 	for (; i--;) {
 		float d = 0.0f;
 		if (shapes[i].type == SPHERE ) d = SphereIntersect(&shapes[i].s, r);
-		if (shapes[i].type == TRIANGLE ) d = TriangleIntersect(&shapes[i].t, pois, poiCnt, r);
+		if (shapes[i].type == TRIANGLE ) d = TriangleIntersect(&shapes[i].t, r);
 		if ((d != 0.f) && (d < *t)) {
 			*t = d;
 			*id = i;
@@ -266,7 +256,7 @@ __constant
                 double d = 0.0f;
 
 			    if (shapes[btl[btn[n].nLeft].nShape].type == SPHERE ) d = SphereIntersect(&shapes[btl[btn[n].nLeft].nShape].s, r);
-				if (shapes[btl[btn[n].nLeft].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[btl[btn[n].nLeft].nShape].t, pois, poiCnt, r);
+				if (shapes[btl[btn[n].nLeft].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[btl[btn[n].nLeft].nShape].t, r);
 
                 if (d != 0.0) {
                     if (d < *t) {
@@ -277,7 +267,7 @@ __constant
                 }
 				
 			    if (shapes[btl[btn[n].nRight].nShape].type == SPHERE ) d = SphereIntersect(&shapes[btl[btn[n].nRight].nShape].s, r);
-				if (shapes[btl[btn[n].nRight].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[btl[btn[n].nRight].nShape].t, pois, poiCnt, r);
+				if (shapes[btl[btn[n].nRight].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[btl[btn[n].nRight].nShape].t, r);
 
                 if (d != 0.0) {
                     if (d < *t) {
@@ -323,7 +313,7 @@ __constant
 
 				for (int i = kng[n].min; i < kng[n].max; i++) {
 					if (shapes[kn[i]].type == SPHERE) d = SphereIntersect(&shapes[kn[i]].s, r);
-					if (shapes[kn[i]].type == TRIANGLE) d = TriangleIntersect(&shapes[kn[i]].t, pois, poiCnt, r);
+					if (shapes[kn[i]].type == TRIANGLE) d = TriangleIntersect(&shapes[kn[i]].t, r);
 
 					if (d != 0.0) {
 						if (d < *t) {
@@ -360,18 +350,13 @@ __constant
 #endif
 	const Shape *shapes,
 	const unsigned int shapeCnt,
-#ifdef GPU_KERNEL
-	__constant
-#endif
-	const Poi *pois,
-	const unsigned int poiCnt,
 	const Ray *r,
 	const float maxt) {
 	unsigned int i = shapeCnt - 1;
 	for (; i--;) {
 		float d = 0.0f;
 		if (shapes[i].type == SPHERE ) d = SphereIntersect(&shapes[i].s, r);
-		if (shapes[i].type == TRIANGLE) d = TriangleIntersect(&shapes[i].t, pois, poiCnt, r);
+		if (shapes[i].type == TRIANGLE) d = TriangleIntersect(&shapes[i].t, r);
 		if ((d != 0.f) && (d < maxt))
 			return 1;
 	}
@@ -385,11 +370,6 @@ __constant
 #endif
 	const Shape *shapes,
 	const unsigned int shapeCnt,
-#ifdef GPU_KERNEL
-	__constant
-#endif
-	const Poi *pois,
-	const unsigned int poiCnt,
 	const unsigned int lightCnt, 
 	unsigned int *seed0, unsigned int *seed1,
 	const Vec *hitPoint,
@@ -422,11 +402,11 @@ __constant
                     float barycentricU, barycentricV;
 					Vec e1, e2;
                     UniformSampleTriangle(GetRandom(seed0, seed1), GetRandom(seed0, seed1), &barycentricU, &barycentricV);
-                    vsub(e1, pois[light->t.p2].p, pois[light->t.p1].p)
-                    vsub(e2, pois[light->t.p3].p, pois[light->t.p1].p)
+                    vsub(e1, light->t.p2, light->t.p1)
+                    vsub(e2, light->t.p3, light->t.p1)
                     vsmul(e1, barycentricU, e1);
                     vsmul(e2, barycentricV, e2);
-                    vassign(lightPoint, pois[light->t.p1].p);
+                    vassign(lightPoint, light->t.p1);
                     vadd(lightPoint, lightPoint, e1);
                     vadd(lightPoint, lightPoint, e2);
 
@@ -466,7 +446,7 @@ __constant
 			
 			/* Check if the light is visible */
 			const float wi = vdot(shadowRay.d, *normal);
-			if ((wi > 0.f) && (!IntersectP(shapes, shapeCnt, pois, poiCnt, &shadowRay, len - EPSILON))) {
+			if ((wi > 0.f) && (!IntersectP(shapes, shapeCnt, &shadowRay, len - EPSILON))) {
 				Vec c; vassign(c, light->e);
 				const float s = light->area * wi * wo / (len *len);
 				vsmul(c, s, c);
@@ -484,11 +464,6 @@ void RadianceOnePathTracing(
 #endif
 	const Shape *shapes,
 	const unsigned int shapeCnt,
-#ifdef GPU_KERNEL
-	__constant
-#endif
-	const Poi *pois,
-	const unsigned int poiCnt,
 	const unsigned int lightCnt,
 #if (ACCELSTR == 1)
 #ifdef GPU_KERNEL
@@ -517,7 +492,7 @@ void RadianceOnePathTracing(
 	float t; /* distance to intersection */
 	unsigned int id = 0; /* id of intersected object */
 
-	if (!Intersect(shapes, shapeCnt, pois, poiCnt,
+	if (!Intersect(shapes, shapeCnt, 
 #if (ACCELSTR == 1)
 		btn, btl,
 #elif (ACCELSTR == 2)
@@ -537,25 +512,25 @@ void RadianceOnePathTracing(
 	enum Refl refl;
 	Shape s = shapes[id];
 
-	if (s.type == SPHERE)
-	{
-		vsub(normal, hitPoint, s.s.p);
-
-		refl = s.refl;
-		col = s.c;
-	}
-	else if (s.type == TRIANGLE)
-	{
-		Vec v0 = pois[s.t.p1].p, v1 = pois[s.t.p2].p, v2 = pois[s.t.p3].p, e1, e2;
-
-		vsub(e1, v1, v0);
-		vsub(e2, v2, v0);
+  if (s.type == SPHERE)
+  {
+	vsub(normal, hitPoint, s.s.p);
+	//{ normal.x = (hitPoint).x - (s.s.p).x; normal.y = (hitPoint).y - (s.s.p).y; normal.z = (hitPoint).z - (s.s.p).z; }
+  }
+  else if (s.type == TRIANGLE)
+  {
+	Vec v0 = s.t.p1, v1 = s.t.p2, v2 = s.t.p3, e1, e2;
+		
+	vsub(e1, v1, v0);
+	//{ e1.x = (v1).x - (v0).x; e1.y = (v1).y - (v0).y; e1.z = (v1).z - (v0).z; }
+	vsub(e2, v2, v0);
+	//{ e2.x = (v2).x - (v0).x; e2.y = (v2).y - (v0).y; e2.z = (v2).z - (v0).z; }
 
 		vxcross(normal, e1, e2);
-
-		refl = s.refl;
-		col = s.c;
 	}
+	refl = s.refl;
+	col = s.c;
+	
 	vnorm(normal);
 
 	const float dp = vdot(normal, currentRay->d);
@@ -591,7 +566,7 @@ void RadianceOnePathTracing(
 		/* Direct lighting component */
 		Vec Ld;
 
-		SampleLights(shapes, shapeCnt, pois, poiCnt, lightCnt, seed0, seed1, &hitPoint, &nl, &Ld);
+		SampleLights(shapes, shapeCnt, lightCnt, seed0, seed1, &hitPoint, &nl, &Ld);
 		vmul(Ld, *throughput, Ld);
 		vadd(*rad, *rad, Ld);
 
@@ -700,11 +675,6 @@ void RadiancePathTracing(
 #endif
 	const Shape *shapes,
 	const unsigned int shapeCnt,
-#ifdef GPU_KERNEL
-	__constant
-#endif
-	const Poi *pois,
-	const unsigned int poiCnt,
 	const unsigned int lightCnt, 
 #if (ACCELSTR == 1)
 #ifdef GPU_KERNEL
@@ -743,7 +713,7 @@ void RadiancePathTracing(
 			return;
 		}
 
-		RadianceOnePathTracing(shapes, shapeCnt, pois, poiCnt, lightCnt, 
+		RadianceOnePathTracing(shapes, shapeCnt, lightCnt, 
 #if (ACCELSTR == 1)
 			btn, btl, 
 #elif (ACCELSTR == 2)
@@ -764,11 +734,6 @@ void RadianceDirectLighting(
 #endif
 	const Shape *shapes,
 	const unsigned int shapeCnt,
-#ifdef GPU_KERNEL
-	__constant
-#endif
-	const Poi *pois,
-	const unsigned int poiCnt,
 	const unsigned int lightCnt, 
 #if (ACCELSTR == 1)
 #ifdef GPU_KERNEL
@@ -811,7 +776,7 @@ void RadianceDirectLighting(
 
 		float t; /* distance to intersection */
 		unsigned int id = 0; /* id of intersected object */
-		if (!Intersect(shapes, shapeCnt, pois, poiCnt, 
+		if (!Intersect(shapes, shapeCnt, 
 #if (ACCELSTR == 1)
 			btn, btl,
 #elif (ACCELSTR == 2)
@@ -840,8 +805,8 @@ OCL_CONSTANT_BUFFER
 
 		case TRIANGLE:
 			{
-			Vec e1; vsub(e1, pois[obj->t.p2].p, pois[obj->t.p1].p);
-			Vec e2; vsub(e2, pois[obj->t.p3].p, pois[obj->t.p1].p);
+			Vec e1; vsub(e1, obj->t.p2, obj->t.p1);
+			Vec e2; vsub(e2, obj->t.p3, obj->t.p1);
 			vxcross(normal, e1, e2);
 			break;
 			}
@@ -875,7 +840,7 @@ OCL_CONSTANT_BUFFER
 			/* Direct lighting component */
 
 			Vec Ld;
-			SampleLights(shapes, shapeCnt, pois, poiCnt, lightCnt, seed0, seed1, &hitPoint, &nl, &Ld);
+			SampleLights(shapes, shapeCnt, lightCnt, seed0, seed1, &hitPoint, &nl, &Ld);
 			vmul(Ld, throughput, Ld);
 			vadd(rad, rad, Ld);
 

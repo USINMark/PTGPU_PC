@@ -64,12 +64,12 @@ Bound CLBVH::getBound(Triangle t)
 {
 	Bound b;
 
-	b.min_x = min3(m_pois[t.p1].p.x, m_pois[t.p2].p.x, m_pois[t.p3].p.x);
-	b.max_x = max3(m_pois[t.p1].p.x, m_pois[t.p2].p.x, m_pois[t.p3].p.x);
-	b.min_y = min3(m_pois[t.p1].p.y, m_pois[t.p2].p.y, m_pois[t.p3].p.y);
-	b.max_y = max3(m_pois[t.p1].p.y, m_pois[t.p2].p.y, m_pois[t.p3].p.y);
-	b.min_z = min3(m_pois[t.p1].p.z, m_pois[t.p2].p.z, m_pois[t.p3].p.z);
-	b.max_z = max3(m_pois[t.p1].p.z, m_pois[t.p2].p.z, m_pois[t.p3].p.z);
+	b.min_x = min3(t.p1.x, t.p2.x, t.p3.x);//m_pois[t.p1].p.x, m_pois[t.p2].p.x, m_pois[t.p3].p.x);
+	b.max_x = max3(t.p1.x, t.p2.x, t.p3.x);//m_pois[t.p1].p.x, m_pois[t.p2].p.x, m_pois[t.p3].p.x);
+	b.min_y = min3(t.p1.y, t.p2.y, t.p3.y);//m_pois[t.p1].p.y, m_pois[t.p2].p.y, m_pois[t.p3].p.y);
+	b.max_y = max3(t.p1.y, t.p2.y, t.p3.y);//m_pois[t.p1].p.y, m_pois[t.p2].p.y, m_pois[t.p3].p.y);
+	b.min_z = min3(t.p1.z, t.p2.z, t.p3.z);//m_pois[t.p1].p.z, m_pois[t.p2].p.z, m_pois[t.p3].p.z);
+	b.max_z = max3(t.p1.z, t.p2.z, t.p3.z);//m_pois[t.p1].p.z, m_pois[t.p2].p.z, m_pois[t.p3].p.z);
 
 	return b;
 }
@@ -77,7 +77,7 @@ Bound CLBVH::getBound(Triangle t)
 /**
 * CLBVH constructor
 */
-CLBVH::CLBVH(Shape *shapes, int shapeCnt, Poi *pois, int poiCnt, cl_command_queue cq, cl_context ctx, cl_kernel kRad, cl_kernel kBvh, cl_kernel kOpt) : m_shapes(shapes), m_shapeCnt(shapeCnt), m_pois(pois), m_poiCnt(poiCnt), m_cq(cq), m_ctx(ctx), m_kRad(kRad), m_kBvh(kBvh), m_kOpt(kOpt)
+CLBVH::CLBVH(Shape *shapes, int shapeCnt, cl_command_queue cq, cl_context ctx, cl_kernel kRad, cl_kernel kBvh, cl_kernel kOpt) : m_shapes(shapes), m_shapeCnt(shapeCnt), m_cq(cq), m_ctx(ctx), m_kRad(kRad), m_kBvh(kBvh), m_kOpt(kOpt)
 {
 	// For internal nodes, leaf = false
 	btn = (BVHNodeGPU *)malloc(sizeof(BVHNodeGPU) * (shapeCnt - 1));
@@ -136,13 +136,13 @@ CLBVH::CLBVH(Shape *shapes, int shapeCnt, Poi *pois, int poiCnt, cl_command_queu
 		}
 		else if (m_shapes[i].type == TRIANGLE)
 		{
-			float min_x = min3(m_pois[m_shapes[i].t.p1].p.x, m_pois[m_shapes[i].t.p2].p.x, m_pois[m_shapes[i].t.p3].p.x);
-			float min_y = min3(m_pois[m_shapes[i].t.p1].p.y, m_pois[m_shapes[i].t.p2].p.y, m_pois[m_shapes[i].t.p3].p.y);
-			float min_z = min3(m_pois[m_shapes[i].t.p1].p.z, m_pois[m_shapes[i].t.p2].p.z, m_pois[m_shapes[i].t.p3].p.z);
+			float min_x = min3(m_shapes[i].t.p1.x, m_shapes[i].t.p2.x, m_shapes[i].t.p3.x);//m_pois[m_shapes[i].t.p1].p.x, m_pois[m_shapes[i].t.p2].p.x, m_pois[m_shapes[i].t.p3].p.x);
+			float min_y = min3(m_shapes[i].t.p1.y, m_shapes[i].t.p2.y, m_shapes[i].t.p3.y);//m_pois[m_shapes[i].t.p1].p.y, m_pois[m_shapes[i].t.p2].p.y, m_pois[m_shapes[i].t.p3].p.y);
+			float min_z = min3(m_shapes[i].t.p1.z, m_shapes[i].t.p2.z, m_shapes[i].t.p3.z);//m_pois[m_shapes[i].t.p1].p.z, m_pois[m_shapes[i].t.p2].p.z, m_pois[m_shapes[i].t.p3].p.z);
 
-			float max_x = max3(m_pois[m_shapes[i].t.p1].p.x, m_pois[m_shapes[i].t.p2].p.x, m_pois[m_shapes[i].t.p3].p.x);
-			float max_y = max3(m_pois[m_shapes[i].t.p1].p.y, m_pois[m_shapes[i].t.p2].p.y, m_pois[m_shapes[i].t.p3].p.y);
-			float max_z = max3(m_pois[m_shapes[i].t.p1].p.z, m_pois[m_shapes[i].t.p2].p.z, m_pois[m_shapes[i].t.p3].p.z);
+			float max_x = max3(m_shapes[i].t.p1.x, m_shapes[i].t.p2.x, m_shapes[i].t.p3.x);//m_pois[m_shapes[i].t.p1].p.x, m_pois[m_shapes[i].t.p2].p.x, m_pois[m_shapes[i].t.p3].p.x);
+			float max_y = max3(m_shapes[i].t.p1.y, m_shapes[i].t.p2.y, m_shapes[i].t.p3.y);//m_pois[m_shapes[i].t.p1].p.y, m_pois[m_shapes[i].t.p2].p.y, m_pois[m_shapes[i].t.p3].p.y);
+			float max_z = max3(m_shapes[i].t.p1.z, m_shapes[i].t.p2.z, m_shapes[i].t.p3.z);//m_pois[m_shapes[i].t.p1].p.z, m_pois[m_shapes[i].t.p2].p.z, m_pois[m_shapes[i].t.p3].p.z);
 
 			p.x = (min_x + max_x) / 2.0f;//(m_pois[m_shapes[i].t.p1].p.x + m_pois[m_shapes[i].t.p2].p.x + m_pois[m_shapes[i].t.p3].p.x) / 3.0f;
 			p.y = (min_y + max_y) / 2.0f;//(m_pois[m_shapes[i].t.p1].p.y + m_pois[m_shapes[i].t.p2].p.y + m_pois[m_shapes[i].t.p3].p.y) / 3.0f;
@@ -229,7 +229,7 @@ void CLBVH::buildRadixTree()
 	clErrchk(clEnqueueReadBuffer(m_cq, m_nBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (m_shapeCnt - 1), btn, 0, NULL, NULL));
 	clErrchk(clEnqueueReadBuffer(m_cq, m_lBuf, CL_TRUE, 0, sizeof(BVHNodeGPU) * (m_shapeCnt), btl, 0, NULL, NULL));
 	
-	FILE *f = fopen("RadixTree.txt", "wt"); // Write image to PPM file.
+	FILE *f = fopen("RadixTree.txt", "wt"); // Write tree to TXT file.
 	for (int i = 0; i < m_shapeCnt - 1; i++) {
 		fprintf(f, "Parent (%d), Left (%d), Right (%d), Leaf (%d), Min (%d), Max (%d)\n", btn[i].nParent, btn[i].nLeft, btn[i].nRight, btn[i].leaf, btn[i].min, btn[i].max);
 	}
@@ -279,12 +279,12 @@ void CLBVH::buildBVHTree()
 
 	int index = 0;
 	/* Set kernel arguments */
+	clErrchk(clSetKernelArg(m_kBvh, index++, sizeof(cl_mem), (void *)&m_shBuf));
 	clErrchk(clSetKernelArg(m_kBvh, index++, sizeof(int), &m_shapeCnt));
 	clErrchk(clSetKernelArg(m_kBvh, index++, sizeof(cl_mem), (void *)&m_nBuf));
 	clErrchk(clSetKernelArg(m_kBvh, index++, sizeof(cl_mem), (void *)&m_lBuf));
 	clErrchk(clSetKernelArg(m_kBvh, index++, sizeof(cl_mem), (void *)&ncBuf));
 	clErrchk(clSetKernelArg(m_kBvh, index++, sizeof(cl_mem), (void *)&sgBuf));
-	clErrchk(clSetKernelArg(m_kBvh, index++, sizeof(cl_mem), (void *)&m_shBuf));
 	
 	clErrchk(clEnqueueNDRangeKernel(m_cq, m_kBvh, 1, NULL, globalThreads, localThreads, 0, NULL, NULL));	
 #ifdef DEBUG_TREE

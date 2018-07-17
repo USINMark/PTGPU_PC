@@ -58,7 +58,7 @@ typedef struct {
 } Poi;
 
 typedef struct {
-	int p1, p2, p3;
+	Vec p1, p2, p3;
 } Triangle;
 
 typedef enum tagType { SPHERE, TRIANGLE } Type;

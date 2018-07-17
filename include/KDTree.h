@@ -15,10 +15,6 @@
 #define MAX_KDTREEDEPTH 25
 
 class KDTreeNode {
-private:
-	Poi *m_pois;
-	unsigned int m_poiCnt;
-	
 public:
 	bool leaf;
 	KDTreeNode *left;
@@ -28,7 +24,7 @@ public:
 
 	std::vector<Shape *> shapes;
 
-	KDTreeNode(Poi *pois, unsigned int poiCnt) : m_pois(pois), m_poiCnt(poiCnt) {};
+	KDTreeNode() {};
 	~KDTreeNode() {};
 
 	//KDNode* build(std::vector<Shape *> s, int depth);
@@ -50,13 +46,23 @@ public:
 
 class KDTree {
 private:
-	Poi * m_pois;
-	unsigned int m_poiCnt;
-
 	int m_maxdepth, m_szbuf;
 
+	Vec getMidpoint(Shape s);
+	Vec getMidpoint(Triangle t);
+	Vec getMidpoint(Sphere s);
+
+	Bound getBound(Triangle t);
+	Bound getBound(Sphere s);
+	Bound getBound(Shape s);
+
+	int getLongestAxis(Bound b);
+	void fillNode(KDTreeNode *tnode, int &locnode, int &locshape, KDNodeGPU *knode, int *pnbuf);
+	void traverseTree(KDTreeNode *tnode, int locNode, int locShape, KDNodeGPU *pkngbuf, int *pknbuf);
+	void traverseTreeDFS(KDTreeNode *tnode, int &locNode, int &locShape, KDNodeGPU *pkngbuf, int *pknbuf);
+
 public:
-	KDTree(Poi *pois, unsigned int poiCnt) : m_pois(pois), m_poiCnt(poiCnt), m_szbuf(0), m_maxdepth(0)
+	KDTree() : m_szbuf(0), m_maxdepth(0)
 	{
 	};
 
@@ -78,19 +84,8 @@ public:
 		if (right) printNode(right, depth + 1);
 	}
 #endif
-	Vec getMidpoint(Shape s);
-	Vec getMidpoint(Triangle t);
-	Vec getMidpoint(Sphere s);
 
-	Bound getBound(Triangle t);
-	Bound getBound(Sphere s);
-	Bound getBound(Shape s);
-	
-	int getLongestAxis(Bound b);
 	KDTreeNode* build(std::vector<Shape *> s, int depth);
-	void getTrees(KDTreeNode *rootNode, KDNodeGPU **ppktn, int **ppktnbuffer, int *pszkngbuf, int *pszknbuf);
-	void fillNode(KDTreeNode *tnode, int &locnode, int &locshape, KDNodeGPU *knode, int *pnbuf);
-	void traverseTree(KDTreeNode *tnode, int locNode, int locShape, KDNodeGPU *pkngbuf, int *pknbuf);
-	void traverseTreeDFS(KDTreeNode *tnode, int &locNode, int &locShape, KDNodeGPU *pkngbuf, int *pknbuf);
+	void getTrees(KDTreeNode *rootNode, KDNodeGPU **ppktn, int *pszkngbuf, int **ppktnbuffer, int *pszknbuf);
 };
 #endif // KDTREE_H

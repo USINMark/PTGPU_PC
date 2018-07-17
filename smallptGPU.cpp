@@ -88,8 +88,8 @@ static cl_mem kngBuffer;
 static cl_mem knBuffer;
 KDNodeGPU *pkngbuf;
 int *pknbuf; 
-int szkngbuf;
-int szknbuf;
+int kngCnt;
+int knCnt;
 #endif
 
 #define MAX_STYPE 255
@@ -100,7 +100,7 @@ int szknbuf;
 
 /* OpenCL variables */
 static cl_context context;
-static cl_mem colorBuffer, pixelBuffer, seedBuffer, shapeBuffer, poiBuffer, cameraBuffer;
+static cl_mem colorBuffer, pixelBuffer, seedBuffer, shapeBuffer, cameraBuffer;
 static cl_command_queue commandQueue;
 static cl_program program;
 
@@ -112,11 +112,10 @@ static int currentSample = 0;
 int useGPU = 1;
 int forceWorkSize = 0;
 
-unsigned int workGroupSize = 1, shapeCnt = 0, poiCnt = 0, lightCnt = 0;
+unsigned int workGroupSize = 1, shapeCnt = 0, lightCnt = 0;
 int pixelCount;
 Camera camera;
 Shape *shapes;
-Poi *pois;
 
 #if (ACCELSTR == 1)
 void BuildBVH();
@@ -446,11 +445,6 @@ void SetUpOpenCL() {
 	
 	clErrchk(clEnqueueWriteBuffer(commandQueue, shapeBuffer, CL_TRUE, 0, sizeof(Shape) * shapeCnt, shapes, 0, NULL, NULL));
 	
-	/*------------------------------------------------------------------------*/
-	poiBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(Poi) * poiCnt, NULL, &status);
-	clErrchk(status);
-	
-	clErrchk(clEnqueueWriteBuffer(commandQueue, poiBuffer, CL_TRUE, 0, sizeof(Poi) * poiCnt, pois, 0, NULL, NULL));	
 #if (ACCELSTR == 1)
 	/*------------------------------------------------------------------------*/
 	btnBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(BVHNodeGPU) * (shapeCnt-1), NULL, &status);
@@ -460,10 +454,10 @@ void SetUpOpenCL() {
 	clErrchk(status);
 #elif (ACCELSTR == 2)
 	/*------------------------------------------------------------------------*/
-	kngBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(KDNodeGPU) * (szkngbuf), NULL, &status);
+	kngBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(KDNodeGPU) * (kngCnt), NULL, &status);
 	clErrchk(status);
 
-	knBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(int) * szknbuf, NULL, &status);
+	knBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(int) * knCnt, NULL, &status);
 	clErrchk(status);
 #endif
 	cameraBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(Camera), NULL, &status);
@@ -690,7 +684,7 @@ void DrawBox(int xstart, int ystart, int bwidth, int bheight, int twidth, int th
 			Vec r;
 			r.x = r.y = r.z = 1.0f;
 
-			RadiancePathTracing(shapes, shapeCnt, pois, poiCnt, lightCnt, 
+			RadiancePathTracing(shapes, shapeCnt, lightCnt, 
 #if (ACCELSTR == 1)
 				btn, btl,
 #elif (ACCELSTR == 2)
@@ -752,16 +746,16 @@ unsigned int *DrawAllBoxes(int bwidth, int bheight, float *rCPU, bool bFirst) {
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&seedBuffer));
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&shapeBuffer));
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&cameraBuffer));
-				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(unsigned int), (void *)&shapeCnt));
-				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&poiBuffer));
-				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(unsigned int), (void *)&poiCnt));
+				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(unsigned int), (void *)&shapeCnt));				
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(unsigned int), (void *)&lightCnt));
 #if (ACCELSTR == 1)
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&btnBuffer));
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&btlBuffer));
 #elif (ACCELSTR == 2)
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&kngBuffer));
+				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(int), (void *)&kngCnt));
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&knBuffer));
+				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(int), (void *)&knCnt));
 #endif
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(int), (void *)&x));
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(int), (void *)&y));
@@ -789,10 +783,6 @@ unsigned int *DrawAllBoxes(int bwidth, int bheight, float *rCPU, bool bFirst) {
 
 				clErrchk(clEnqueueWriteBuffer(commandQueue, debugBuffer2, CL_TRUE, 0, 6 * sizeof(float) * shapeCnt, debug2, 0, NULL, NULL));
 				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(cl_mem), (void *)&debugBuffer2));
-#endif
-#if (ACCELSTR == 2)
-				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(int), (void *)&szkngbuf));
-				clErrchk(clSetKernelArg(kernelBox, index++, sizeof(int), (void *)&szknbuf));
 #endif
 				setTotalTime += (WallClockTime() - setStartTime);
 
@@ -997,18 +987,18 @@ unsigned int *DrawFrame() {
 	/* Set kernel arguments */
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&colorBuffer));
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&seedBuffer));
-	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&shapeBuffer));
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *) &cameraBuffer));
+	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&shapeBuffer));
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(unsigned int), (void *) &shapeCnt));
-	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&poiBuffer));
-	clErrchk(clSetKernelArg(kernel, index++, sizeof(unsigned int), (void *)&poiCnt));
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(unsigned int), (void *)&lightCnt));
 #if (ACCELSTR == 1)	
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&btnBuffer));
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&btlBuffer));
 #elif (ACCELSTR == 2)
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&kngBuffer));
+	clErrchk(clSetKernelArg(kernel, index++, sizeof(int), (void *)&kngCnt));
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *)&knBuffer));
+	clErrchk(clSetKernelArg(kernel, index++, sizeof(int), (void *)&knCnt));
 #endif
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(int), (void *) &width));
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(int), (void *) &height));
@@ -1035,10 +1025,6 @@ unsigned int *DrawFrame() {
 	clErrchk(clEnqueueWriteBuffer(commandQueue, debugBuffer2, CL_TRUE, 0, 6 * sizeof(float) * shapeCnt, debug2, 0, NULL, NULL));
 	
 	clErrchk(clSetKernelArg(kernel, index++, sizeof(cl_mem), (void *) &debugBuffer2));	
-#endif
-#if (ACCELSTR == 2)
-	clErrchk(clSetKernelArg(kernel, index++, sizeof(int), (void *)&szkngbuf));
-	clErrchk(clSetKernelArg(kernel, index++, sizeof(int), (void *)&szknbuf));
 #endif
 	setTotalTime += (WallClockTime() - setStartTime);
 
@@ -1136,8 +1122,8 @@ void ReInit(const int reallocBuffers) {
 	clErrchk(clEnqueueWriteBuffer(commandQueue, btnBuffer, CL_TRUE, 0, sizeof(BVHNodeGPU) * (shapeCnt - 1), btn, 0, NULL, NULL));
 	clErrchk(clEnqueueWriteBuffer(commandQueue, btlBuffer, CL_TRUE, 0, sizeof(BVHNodeGPU) * (shapeCnt), btl, 0, NULL, NULL));
 #elif (ACCELSTR == 2)
-	clErrchk(clEnqueueWriteBuffer(commandQueue, kngBuffer, CL_TRUE, 0, sizeof(KDNodeGPU) * (szkngbuf), pkngbuf, 0, NULL, NULL));
-	clErrchk(clEnqueueWriteBuffer(commandQueue, knBuffer, CL_TRUE, 0, sizeof(int) * (szknbuf), pknbuf, 0, NULL, NULL));
+	clErrchk(clEnqueueWriteBuffer(commandQueue, kngBuffer, CL_TRUE, 0, sizeof(KDNodeGPU) * (kngCnt), pkngbuf, 0, NULL, NULL));
+	clErrchk(clEnqueueWriteBuffer(commandQueue, knBuffer, CL_TRUE, 0, sizeof(int) * (knCnt), pknbuf, 0, NULL, NULL));
 #endif
 
     currentSample = 0;
@@ -1448,7 +1434,7 @@ void AddWallLight()
 #if (ACCELSTR == 1)
 void BuildBVH()
 {
-	CLBVH *pCB = new CLBVH(shapes, shapeCnt, pois, poiCnt, commandQueue, context, kernelRad, kernelBvh, kernelOpt);
+	CLBVH *pCB = new CLBVH(shapes, shapeCnt, commandQueue, context, kernelRad, kernelBvh, kernelOpt);
 
 	pCB->buildRadixTree();
 	pCB->buildBVHTree();
@@ -1472,10 +1458,10 @@ void BuildKDtree()
 		vs.push_back(&shapes[i]);
 	}
 
-	KDTree *kdTree = new KDTree(pois, poiCnt);
+	KDTree *kdTree = new KDTree();
 	KDTreeNode *rootNode = kdTree->build(vs, 0);
 	//kdTree->printNode(rootNode, 0);
 
-	kdTree->getTrees(rootNode, &pkngbuf, &pknbuf, &szkngbuf, &szknbuf);
+	kdTree->getTrees(rootNode, &pkngbuf, &kngCnt, &pknbuf, &knCnt);
 }
 #endif

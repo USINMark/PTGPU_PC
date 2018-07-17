@@ -211,7 +211,7 @@ int longestCommonPrefix(int i, int j, int len)
  * BVH Construction kernel
  * Algorithm described in karras2012 paper (bottom-up approach).
  */
-__kernel void kernelConstructBVHTree(int len, __global BVHNodeGPU *treeNodes, __global BVHNodeGPU *treeLeaves, __global int *nodeCounter, __constant int *sorted_geometry_indices, __global Shape *shapes) 
+__kernel void kernelConstructBVHTree(__constant Shape *shapes, int len, __global BVHNodeGPU *treeNodes, __global BVHNodeGPU *treeLeaves, __global int *nodeCounter, __constant int *sorted_geometry_indices) 
 {
     int index = get_global_id(0);
     

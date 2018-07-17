@@ -69,14 +69,9 @@ float TriangleIntersect(
 __constant
 
 	const Triangle *tr,
-
-__constant
-
-	const Poi *pois,
-	const unsigned int poiCnt,
 	const Ray *r) { 
 	/* returns distance, 0 if nohit */
-	Vec v0 = pois[tr->p1].p, v1 = pois[tr->p2].p, v2 = pois[tr->p3].p, e1, e2, tvec, pvec, qvec;
+	Vec v0 = tr->p1, v1 = tr->p2, v2 = tr->p3, e1, e2, tvec, pvec, qvec;
 	float t = 0.0f, u, v;
 	float det, inv_det;
 
@@ -208,11 +203,6 @@ __constant
 
  const Shape *shapes,
  const unsigned int shapeCnt,
-
-__constant
-
- Poi *pois,
- const unsigned int poiCnt,
 #if (ACCELSTR == 1)
 __constant
 
@@ -224,10 +214,11 @@ __constant
  __constant
  
  KDNodeGPU *kng, 
+ int kngCnt, 
 __constant
 
  int *kn, 
- int szkng, int szkn, 
+ int knCnt, 
 #endif
  const Ray *r,
  float *t,
@@ -244,7 +235,7 @@ __constant
 	for (; i--;) {
 		float d = 0.0f;
 		if (shapes[i].type == SPHERE ) d = SphereIntersect(&shapes[i].s, r);
-		if (shapes[i].type == TRIANGLE ) d = TriangleIntersect(&shapes[i].t, pois, poiCnt, r);
+		if (shapes[i].type == TRIANGLE ) d = TriangleIntersect(&shapes[i].t, r);
 		if ((d != 0.f) && (d < *t)) {
 			*t = d;
 			*id = i;
@@ -271,7 +262,7 @@ __constant
 #ifdef DEBUG_INTERSECTIONS
         atomic_add(&debug1[n], 1);
 #endif
-
+ 
         if (intersection_bound_test(*r, btn[n].bound
 #ifdef DEBUG_INTERSECTIONS
 			, debug2
@@ -285,12 +276,12 @@ __constant
                     //printf("Intersect stack not big enough. Increase INTERSECT_STACK_SIZE!\n");
                     return 0;
                 }
-			}
+			} 
 			else if (btn[n].leaf == 2) {
                 float d = 0.0f;
 
 			    if (shapes[btl[btn[n].nLeft].nShape].type == SPHERE ) d = SphereIntersect(&shapes[btl[btn[n].nLeft].nShape].s, r);
-				if (shapes[btl[btn[n].nLeft].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[btl[btn[n].nLeft].nShape].t, pois, poiCnt, r);
+				if (shapes[btl[btn[n].nLeft].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[btl[btn[n].nLeft].nShape].t, r);
 
                 if (d != 0.0) {
                     if (d < *t) {
@@ -301,7 +292,7 @@ __constant
                 }
 				
 			    if (shapes[btl[btn[n].nRight].nShape].type == SPHERE ) d = SphereIntersect(&shapes[btl[btn[n].nRight].nShape].s, r);
-				if (shapes[btl[btn[n].nRight].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[btl[btn[n].nRight].nShape].t, pois, poiCnt, r);
+				if (shapes[btl[btn[n].nRight].nShape].type == TRIANGLE ) d = TriangleIntersect(&shapes[btl[btn[n].nRight].nShape].t, r);
 
                 if (d != 0.0) {
                     if (d < *t) {
@@ -354,7 +345,7 @@ __constant
 
 				for (int i = kng[n].min; i < kng[n].max; i++) {
 					if (shapes[kn[i]].type == SPHERE) d = SphereIntersect(&shapes[kn[i]].s, r);
-					if (shapes[kn[i]].type == TRIANGLE) d = TriangleIntersect(&shapes[kn[i]].t, pois, poiCnt, r);
+					if (shapes[kn[i]].type == TRIANGLE) d = TriangleIntersect(&shapes[kn[i]].t, r);
 
 					if (d != 0.0) {
 						if (d < *t) {
@@ -391,18 +382,13 @@ __constant
 
  const Shape *shapes,
  const unsigned int shapeCnt,
-
-__constant
-
- const Poi *pois,
- const unsigned int poiCnt, 
  const Ray *r,
  const float maxt) {
  unsigned int i = shapeCnt - 1;
  for (; i--;) {
   float d = 0.0f;
   if (shapes[i].type == SPHERE ) d = SphereIntersect(&shapes[i].s, r);
-  if (shapes[i].type == TRIANGLE ) d = TriangleIntersect(&shapes[i].t, pois, poiCnt, r);
+  if (shapes[i].type == TRIANGLE ) d = TriangleIntersect(&shapes[i].t, r);
   if ((d != 0.f) && (d < maxt))
    return 1;
  }
@@ -416,11 +402,6 @@ __constant
 
  const Shape *shapes,
  const unsigned int shapeCnt,
-
-__constant
-
- const Poi *pois,
- const unsigned int poiCnt,
  const unsigned int lightCnt,
  unsigned int *seed0, unsigned int *seed1,
  const Vec *hitPoint,
@@ -454,11 +435,11 @@ __constant
                     float barycentricU, barycentricV;
 					Vec e1, e2;
                     UniformSampleTriangle(GetRandom(seed0, seed1), GetRandom(seed0, seed1), &barycentricU, &barycentricV);
-                    vsub(e1, pois[light->t.p2].p, pois[light->t.p1].p)
-                    vsub(e2, pois[light->t.p3].p, pois[light->t.p1].p)
+                    vsub(e1, light->t.p2, light->t.p1)
+                    vsub(e2, light->t.p3, light->t.p1)
                     vsmul(e1, barycentricU, e1);
                     vsmul(e2, barycentricV, e2);
-                    vassign(lightPoint, pois[light->t.p1].p);
+                    vassign(lightPoint, light->t.p1);
                     vadd(lightPoint, lightPoint, e1);
                     vadd(lightPoint, lightPoint, e2);
 
@@ -497,7 +478,7 @@ __constant
 	wo = clamp(wo, 0.f, 1.f);
 	
    const float wi = vdot(shadowRay.d, *normal);//((shadowRay.d).x * (*normal).x + (shadowRay.d).y * (*normal).y + (shadowRay.d).z * (*normal).z);
-   if ((wi > 0.f) && (!IntersectP(shapes, shapeCnt, pois, poiCnt, &shadowRay, len - EPSILON))) {
+   if ((wi > 0.f) && (!IntersectP(shapes, shapeCnt, &shadowRay, len - EPSILON))) {
     Vec c; vassign(c, light->e); //{ (c).x = (light->e).x; (c).y = (light->e).y; (c).z = (light->e).z; };
     const float s = light->area * wi * wo / (len *len);
     vsmul(c, s, c);
@@ -514,12 +495,7 @@ void RadianceOnePathTracing(
 __constant
 
  const Shape *shapes,
- const unsigned int shapeCnt,
- 
-__constant
-
- Poi *pois,
- const unsigned int poiCnt,
+ const unsigned int shapeCnt, 
  const unsigned int lightCnt,
 #if (ACCELSTR == 1)
 __constant
@@ -532,10 +508,11 @@ __constant
 __constant 
  
  KDNodeGPU *kng,
+ int kngCnt, 
 __constant 
 
  int *kn, 
- int szkng, int szkn, 
+ int knCnt, 
 #endif
  Ray *currentRay,
  unsigned int *seed0, unsigned int *seed1, 
@@ -549,11 +526,11 @@ __constant
   float t;
   unsigned int id = 0;
 
-  if (!Intersect(shapes, shapeCnt, pois, poiCnt, 
+  if (!Intersect(shapes, shapeCnt, 
 #if (ACCELSTR == 1)
   btn, btl,   
 #elif (ACCELSTR == 2)
-  kng, kn, szkng, szkn, 
+  kng, kngCnt, kn, knCnt, 
 #endif
   currentRay, &t, &id
 #ifdef DEBUG_INTERSECTIONS
@@ -585,7 +562,7 @@ __constant
   }
   else if (s.type == TRIANGLE)
   {
-	Vec v0 = pois[s.t.p1].p, v1 = pois[s.t.p2].p, v2 = pois[s.t.p3].p, e1, e2;
+	Vec v0 = s.t.p1, v1 = s.t.p2, v2 = s.t.p3, e1, e2;
 		
 	vsub(e1, v1, v0);
 	//{ e1.x = (v1).x - (v0).x; e1.y = (v1).y - (v0).y; e1.z = (v1).z - (v0).z; }
@@ -639,7 +616,7 @@ __constant
    //{ (throughput)->x = (throughput)->x * (col).x; (throughput)->y = (throughput)->y * (col).y; (throughput)->z = (throughput)->z * (col).z; };
 
    Vec Ld;
-   SampleLights(shapes, shapeCnt, pois, poiCnt, lightCnt, seed0, seed1, &hitPoint, &nl, &Ld);
+   SampleLights(shapes, shapeCnt, lightCnt, seed0, seed1, &hitPoint, &nl, &Ld);
    vmul(Ld, *throughput, Ld);
    //{ (Ld).x = (throughput)->x * (Ld).x; (Ld).y = (throughput)->y * (Ld).y; (Ld).z = (throughput)->z * (Ld).z; };
    vadd(*rad, *rad, Ld);
@@ -776,12 +753,7 @@ void RadiancePathTracing(
 __constant
 
  const Shape *shapes,
- const unsigned int shapeCnt,
- 
-__constant
-
- Poi *pois,
- const unsigned int poiCnt,
+ const unsigned int shapeCnt, 
  const unsigned int lightCnt,
 #if (ACCELSTR == 1)
 __constant
@@ -794,10 +766,11 @@ __constant
 __constant 
  
  KDNodeGPU *kng,
+ int kngCnt, 
 __constant 
 
  int *kn, 
- int szkng, int szkn, 
+ int knCnt, 
 #endif
  const Ray *startRay,
  unsigned int *seed0, unsigned int *seed1,
@@ -821,11 +794,11 @@ __constant
    return;
   }
 
-	RadianceOnePathTracing(shapes, shapeCnt, pois, poiCnt, lightCnt,
+	RadianceOnePathTracing(shapes, shapeCnt, lightCnt,
 #if (ACCELSTR == 1)
 		btn, btl, 
 #elif (ACCELSTR == 2)
-		kng, kn, szkng, szkn, 
+		kng, kngCnt, kn, knCnt, 
 #endif
 		&currentRay, seed0, seed1, depth, &rad, &throughput, &specularBounce, &terminated, result
 #ifdef DEBUG_INTERSECTIONS
@@ -845,12 +818,7 @@ void RadianceDirectLighting(
 __constant
 
  const Shape *shapes,
- const unsigned int shapeCnt,
- 
-__constant
-
- Poi *pois,
- const unsigned int poiCnt,
+ const unsigned int shapeCnt, 
  const unsigned int lightCnt,
 #if (ACCELSTR == 1)
 __constant
@@ -863,10 +831,11 @@ __constant
 __constant 
  
  KDNodeGPU *kng,
+ int kngCnt, 
 __constant 
 
  int *kn, 
- int szkng, int szkn, 
+ int knCnt, 
 #endif
  const Ray *startRay,
  unsigned int *seed0, unsigned int *seed1,
@@ -891,11 +860,11 @@ __constant
 
   float t;
   unsigned int id = 0;
-  if (!Intersect(shapes, shapeCnt, pois, poiCnt, 
+  if (!Intersect(shapes, shapeCnt, 
 #if (ACCELSTR == 1)
   btn, btl, 
 #elif (ACCELSTR == 2)
-  kng, kn, szkng, szkn, 
+  kng, kngCnt, kn, knCnt, 
 #endif
   &currentRay, &t, &id
 #ifdef DEBUG_INTERSECTIONS
@@ -925,8 +894,8 @@ __constant
 
   case TRIANGLE:
 	{
-		Vec e1; vsub(e1, pois[obj->t.p2].p, pois[obj->t.p1].p);
-		Vec e2; vsub(e2, pois[obj->t.p3].p, pois[obj->t.p1].p);	
+		Vec e1; vsub(e1, obj->t.p2, obj->t.p1);
+		Vec e2; vsub(e2, obj->t.p3, obj->t.p1);
 		
 		vxcross(normal, e1, e2);
 		//{ normal.x = (e1).y * (e2).z - (e1).z * (e2).y; normal.y = (e1).z * (e2).x - (e1).x * (e2).z; normal.z = (e1).x * (e2).y - (e1).y * (e2).x; }
@@ -967,7 +936,7 @@ __constant
    //{ (throughput).x = (throughput).x * (obj->c).x; (throughput).y = (throughput).y * (obj->c).y; (throughput).z = (throughput).z * (obj->c).z; };
 
    Vec Ld;
-   SampleLights(shapes, shapeCnt, pois, poiCnt, lightCnt, seed0, seed1, &hitPoint, &nl, &Ld);
+   SampleLights(shapes, shapeCnt, lightCnt, seed0, seed1, &hitPoint, &nl, &Ld);
    vmul(Ld, throughput, Ld);
    //{ (Ld).x = (throughput).x * (Ld).x; (Ld).y = (throughput).y * (Ld).y; (Ld).z = (throughput).z * (Ld).z; };
    vadd(rad, rad, Ld);
@@ -1088,25 +1057,21 @@ void GenerateCameraRay(
  rinit(*ray, rorig, rdir);
  //{ { ((*ray).o).x = (rorig).x; ((*ray).o).y = (rorig).y; ((*ray).o).z = (rorig).z; }; { ((*ray).d).x = (rdir).x; ((*ray).d).y = (rdir).y; ((*ray).d).z = (rdir).z; }; };
 }
- 
+  
 __kernel void RadianceGPU(
     __global Vec *colors, __global unsigned int *seedsInput,
- __constant Shape *shapes, 
  __constant Camera *camera,
+ __constant Shape *shapes, 
  const unsigned int shapeCnt,
- __constant Poi *pois,
- const unsigned int poiCnt,
  const unsigned int lightCnt, 
 #if (ACCELSTR == 1)
  __constant BVHNodeGPU *btn, 
  __constant BVHNodeGPU *btl, 
 #elif (ACCELSTR == 2)
-__constant
-
- KDNodeGPU *kng, 
-__constant
-
- int *kn, 
+ __constant KDNodeGPU *kng, 
+ int kngCnt, 
+ __constant int *kn, 
+ int knCnt, 
 #endif
  const int width, const int height,
  const int currentSample,
@@ -1115,9 +1080,6 @@ __constant
  , __global int *debug1,
  __global float *debug2
 #endif 
-#if (ACCELSTR == 2)
- , int szkng, int szkn
-#endif
  ) {
     const int gid = get_global_id(0);
  const int gid2 = gid << 1;
@@ -1134,11 +1096,11 @@ __constant
  GenerateCameraRay(camera, &seed0, &seed1, width, height, x, y, &ray);
 
  Vec r;
- RadiancePathTracing(shapes, shapeCnt, pois, poiCnt, lightCnt, 
+ RadiancePathTracing(shapes, shapeCnt, lightCnt, 
 #if (ACCELSTR == 1)
  btn, btl, 
 #elif (ACCELSTR == 2)
- kng, kn, szkng, szkn, 
+ kng, kngCnt, kn, knCnt, 
 #endif
  &ray, &seed0, &seed1, &r
 #ifdef DEBUG_INTERSECTIONS
@@ -1170,15 +1132,15 @@ __kernel void RadianceBoxGPU(
  __constant Shape *shapes, 
  __constant Camera *camera,
  const unsigned int shapeCnt,
- __constant Poi *pois,
- const unsigned int poiCnt,
  const unsigned int lightCnt,
 #if (ACCELSTR == 1)
  __constant BVHNodeGPU *btn, 
  __constant BVHNodeGPU *btl, 
 #elif (ACCELSTR == 2)
  __constant KDNodeGPU *kng,
+ int kngCnt, 
  __constant int *kn, 
+ int knCnt, 
 #endif
  const int x, const int y,
  const int bwidth, const int bheight,
@@ -1189,9 +1151,6 @@ __kernel void RadianceBoxGPU(
  , __global int *debug1,
  __global float *debug2
 #endif 
-#if (ACCELSTR == 2)
- , int szkngbuf, int szknbuf
-#endif
  ) {
     const int gid = get_global_id(0);
 	
@@ -1211,11 +1170,11 @@ __kernel void RadianceBoxGPU(
  GenerateCameraRay(camera, &seed0, &seed1, twidth, theight, x + xwithinbox, y + ywithinbox, &ray);
 
  Vec r;
- RadiancePathTracing(shapes, shapeCnt, pois, poiCnt, lightCnt, 
+ RadiancePathTracing(shapes, shapeCnt, lightCnt, 
 #if (ACCELSTR == 1)
  btn, btl, 
 #elif (ACCELSTR == 2)
- kng, kn, szkngbuf, szknbuf, 
+ kng, kngCnt, kn, knCnt, 
 #endif
  &ray, &seed0, &seed1, &r
 #ifdef DEBUG_INTERSECTIONS

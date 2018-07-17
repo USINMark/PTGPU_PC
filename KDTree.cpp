@@ -23,12 +23,12 @@ Bound KDTree::getBound(Triangle t)
 {
 	Bound b;
 
-	b.min_x = min3(m_pois[t.p1].p.x, m_pois[t.p2].p.x, m_pois[t.p3].p.x);
-	b.max_x = max3(m_pois[t.p1].p.x, m_pois[t.p2].p.x, m_pois[t.p3].p.x);
-	b.min_y = min3(m_pois[t.p1].p.y, m_pois[t.p2].p.y, m_pois[t.p3].p.y);
-	b.max_y = max3(m_pois[t.p1].p.y, m_pois[t.p2].p.y, m_pois[t.p3].p.y);
-	b.min_z = min3(m_pois[t.p1].p.z, m_pois[t.p2].p.z, m_pois[t.p3].p.z);
-	b.max_z = max3(m_pois[t.p1].p.z, m_pois[t.p2].p.z, m_pois[t.p3].p.z);
+	b.min_x = min3(t.p1.x, t.p2.x, t.p3.x);//[t.p1].p.x, m_pois[t.p2].p.x, m_pois[t.p3].p.x);
+	b.max_x = max3(t.p1.x, t.p2.x, t.p3.x);//m_pois[t.p1].p.x, m_pois[t.p2].p.x, m_pois[t.p3].p.x);
+	b.min_y = min3(t.p1.y, t.p2.y, t.p3.y);//m_pois[t.p1].p.y, m_pois[t.p2].p.y, m_pois[t.p3].p.y);
+	b.max_y = max3(t.p1.y, t.p2.y, t.p3.y);//m_pois[t.p1].p.y, m_pois[t.p2].p.y, m_pois[t.p3].p.y);
+	b.min_z = min3(t.p1.z, t.p2.z, t.p3.z);//m_pois[t.p1].p.z, m_pois[t.p2].p.z, m_pois[t.p3].p.z);
+	b.max_z = max3(t.p1.z, t.p2.z, t.p3.z);//m_pois[t.p1].p.z, m_pois[t.p2].p.z, m_pois[t.p3].p.z);
 
 	return b;
 }
@@ -52,9 +52,9 @@ Vec KDTree::getMidpoint(Triangle t)
 {
 	Vec v;
 
-	v.x = (m_pois[t.p1].p.x + m_pois[t.p2].p.x + m_pois[t.p3].p.x) / 3.0f;
-	v.y = (m_pois[t.p1].p.y + m_pois[t.p2].p.y + m_pois[t.p3].p.y) / 3.0f;
-	v.z = (m_pois[t.p1].p.z + m_pois[t.p2].p.z + m_pois[t.p3].p.z) / 3.0f;
+	v.x = (t.p1.x, t.p2.x, t.p3.x) / 3.0f;// m_pois[t.p1].p.x + m_pois[t.p2].p.x + m_pois[t.p3].p.x) / 3.0f;
+	v.y = (t.p1.y, t.p2.y, t.p3.y) / 3.0f;// m_pois[t.p1].p.y + m_pois[t.p2].p.y + m_pois[t.p3].p.y) / 3.0f;
+	v.z = (t.p1.z, t.p2.z, t.p3.z) / 3.0f;// m_pois[t.p1].p.z + m_pois[t.p2].p.z + m_pois[t.p3].p.z) / 3.0f;
 
 	return v;
 }
@@ -88,7 +88,7 @@ int KDTree::getLongestAxis(Bound b)
 // 삼각형들을 위한 KDTREE 생성 
 KDTreeNode* KDTree::build(std::vector<Shape *> s, int depth)
 {
-	KDTreeNode* node = new KDTreeNode(m_pois, m_poiCnt);
+	KDTreeNode* node = new KDTreeNode();
 	if (depth > m_maxdepth) m_maxdepth = depth;
 
 	node->leaf = false;
@@ -196,7 +196,7 @@ void KDTree::fillNode(KDTreeNode *tnode, int &locnode, int &locshape, KDNodeGPU 
 		kngnode[locnode].max = locshape;
 	}
 
-	kngnode[locnode].nShape = tnode->shapes.size();
+	//kngnode[locnode].nShape = tnode->shapes.size();
 
 	kngnode[locnode].nLeft = 2 * locnode;
 	kngnode[locnode].nRight = 2 * locnode + 1;
@@ -254,7 +254,7 @@ void KDTree::traverseTreeDFS(KDTreeNode *tnode, int &locNode, int &locShape, KDN
 	}
 }
 
-void KDTree::getTrees(KDTreeNode *rootNode, KDNodeGPU **ppkngbuf, int **ppknbuf, int *pszkngbuf, int *pszknbuf)
+void KDTree::getTrees(KDTreeNode *rootNode, KDNodeGPU **ppkngbuf, int *pkngCnt, int **ppknbuf, int *pknCnt)
 {
 	int *pknbuf = (int *)malloc(sizeof(int) * m_szbuf), size = pow(2, m_maxdepth + 1);
 	KDNodeGPU *pkngbuf = (KDNodeGPU *)malloc(sizeof(KDNodeGPU) * size);
@@ -265,6 +265,6 @@ void KDTree::getTrees(KDTreeNode *rootNode, KDNodeGPU **ppkngbuf, int **ppknbuf,
 
 	*ppkngbuf = pkngbuf;
 	*ppknbuf = pknbuf;
-	*pszkngbuf = size;
-	*pszknbuf = m_szbuf;
+	*pkngCnt = size;
+	*pknCnt = m_szbuf;
 }
