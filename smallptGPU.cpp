@@ -514,7 +514,7 @@ void SetUpOpenCL() {
 		LOGE("OpenCL Programm Build Log: %s\n", buildLog);
 
 		char strError[MAX_ERROR];
-		strcpy(strError, "");
+		//strcpy(strError, strResPath);
 		strcat(strError, "error_renderingkernel.txt");
 
 		FILE *fp = fopen(strError, "wt");

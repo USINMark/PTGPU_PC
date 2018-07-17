@@ -51,6 +51,8 @@ double WallClockTime();
 bool Read(char *fileName, bool *walllight);
 void UpdateCamera();
 void ReInit(const int reallocBuffers);
-
+#ifdef __ANDROID__
+void touchFunc(int x, int y);
+#endif
 #endif	/* _DISPLAYFUNC_H */
 

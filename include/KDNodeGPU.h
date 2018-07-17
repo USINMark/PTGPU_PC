@@ -9,6 +9,8 @@ typedef struct KDNodeGPU {
 	
 	short min;
 	short max;
+
+	//int nShape;
 } KDNodeGPU;
 
 #endif //KDNODEGPU_H

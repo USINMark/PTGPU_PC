@@ -4,6 +4,7 @@
 
 #ifndef PTGPU_NATIVE_LIB_H
 #define PTGPU_NATIVE_LIB_H
+
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
 #endif

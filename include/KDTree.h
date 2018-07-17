@@ -86,6 +86,6 @@ public:
 #endif
 
 	KDTreeNode* build(std::vector<Shape *> s, int depth);
-	void getTrees(KDTreeNode *rootNode, KDNodeGPU **ppktn, int *pszkngbuf, int **ppktnbuffer, int *pszknbuf);
+	void getTrees(KDTreeNode *rootNode, KDNodeGPU **ppkng, int *pkngCnt, int **ppkn, int *pknCnt);
 };
 #endif // KDTREE_H

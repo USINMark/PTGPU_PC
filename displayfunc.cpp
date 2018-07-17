@@ -754,3 +754,20 @@ void UpdateCamera() {
 	// multiplies y axis by the fov
 	vsmul(camera.y, fov, camera.y);
 }
+
+#ifdef __ANDROID__
+#define TWO_PI 6.28318530717958647693f
+#define PI_OVER_TWO 1.57079632679489661923f
+
+void touchFunc(int deltax, int deltay) {
+	if (deltax != 0 || deltay != 0) {
+// rotate the camera using pitch (nodding movement) and yaw (nonono movement)
+		camera.yaw += deltax * 0.0001;
+		camera.yaw = camera.yaw - TWO_PI * floor(camera.yaw / TWO_PI);
+		camera.pitch += -deltay * 0.0001;
+		camera.pitch = clamp(camera.pitch, -PI_OVER_TWO, PI_OVER_TWO);
+
+		ReInit(0);
+	}
+}
+#endif

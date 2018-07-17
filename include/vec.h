@@ -41,7 +41,7 @@ typedef struct {
 #define vnorm(v) { float l = 1.f / sqrt(vdot(v, v)); vsmul(v, l, v); }
 #define vxcross(v, a, b) vinit(v, (a).y * (b).z - (a).z * (b).y, (a).z * (b).x - (a).x * (b).z, (a).x * (b).y - (a).y * (b).x)
 #define vfilter(v) ((v).x > (v).y && (v).x > (v).z ? (v).x : (v).y > (v).z ? (v).y : (v).z)
-#define viszero(v) (((v).x == 0.f) && ((v).x == 0.f) && ((v).z == 0.f))
+#define viszero(v) (((v).x == 0.f) && ((v).y == 0.f) && ((v).z == 0.f))
 #define norm(v) (sqrt((v).x*(v).x + (v).y*(v).y + (v).z*(v).z))
 #define dist(a, b) (sqrt( ((a).x-(b).x)*((a).x-(b).x)  +   ((a).y-(b).y)*((a).y-(b).y)   +   ((a).z-(b).z)*((a).z-(b).z)))
 #define affine(v, t, a, b) vinit(v, (a).x*t + (b).x*(1-t), (a).y*t + (b).y*(1-t), (a).z*t + (b).z*(1-t))
