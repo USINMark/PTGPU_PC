@@ -33,6 +33,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define MAX_SPP 6
 
 #define ACCELSTR 1 //2 //0 is no accel, 1 is BVH and 2 is KDTREE
+//#define __ANDROID__
 //#define EXP_KERNEL
 //#define CPU_PARTRENDERING
 //#define DEBUG_INTERSECTIONS

@@ -1,15 +1,5 @@
 
 #include "clheader.h"
- 
-inline float min2(float a, float b) {
-    //return (a < b) ? a : b;
-	return fmin(a, b);
-}
-
-inline float max2(float a, float b) {
-    //return (a > b) ? a : b;
-	return fmax(a, b);
-}
 
 inline float GetRandom(unsigned int *seed0, unsigned int *seed1) {
  *seed0 = 36969 * ((*seed0) & 65535) + ((*seed0) >> 16);
@@ -34,9 +24,11 @@ inline void swap(float *a, float *b)
 }
 
 float SphereIntersect(
-
+#ifdef __ANDROID__
+__global
+#else
 __constant
-
+#endif
  const Sphere *s,
  const Ray *r) {
  Vec op;
@@ -65,9 +57,11 @@ __constant
 
 //Written in the paper "Fast, Minimum Storage Ray/ Triangle Intersection".
 float TriangleIntersect(
-
+#ifdef __ANDROID__
+__global
+#else
 __constant
-
+#endif
 	const Triangle *tr,
 	const Ray *r) { 
 	/* returns distance, 0 if nohit */
@@ -132,7 +126,7 @@ __constant
 
 void UniformSampleSphere(const float u1, const float u2, Vec *v) {
  const float zz = 1.f - 2.f * u1;
- const float r = sqrt(max2(0.f, 1.f - zz * zz));
+ const float r = sqrt(max(0.f, 1.f - zz * zz));
  const float phi = 2.f * FLOAT_PI * u2;
  const float xx = r * cos(phi);
  const float yy = r * sin(phi);
@@ -183,8 +177,8 @@ bool intersection_bound_test(const Ray r, Bound bound
     }
 
     // find if there an intersection among three t intervals
-    t_min = max2(t_xmin, max2(t_ymin, t_zmin));
-    t_max = min2(t_xmax, min2(t_ymax, t_zmax));
+    t_min = max(t_xmin, max(t_ymin, t_zmin));
+    t_max = min(t_xmax, min(t_ymax, t_zmax));
 	
 #ifdef DEBUG_INTERSECTIONS
     if (get_global_id(0) == 0) {
@@ -198,9 +192,11 @@ bool intersection_bound_test(const Ray r, Bound bound
 }
 
 int Intersect(
-
+#ifdef __ANDROID__
+__global
+#else
 __constant
-
+#endif
  const Shape *shapes,
  const unsigned int shapeCnt,
 #if (ACCELSTR == 1)
@@ -377,9 +373,11 @@ static void UniformSampleTriangle(const float u1, const float u2, float *u, floa
 }
 
 int IntersectP(
-
+#ifdef __ANDROID__
+__global
+#else
 __constant
-
+#endif
  const Shape *shapes,
  const unsigned int shapeCnt,
  const Ray *r,
@@ -397,9 +395,11 @@ __constant
 }
 
 void SampleLights(
-
+#ifdef __ANDROID__
+__global
+#else
 __constant
-
+#endif
  const Shape *shapes,
  const unsigned int shapeCnt,
  const unsigned int lightCnt,
@@ -413,9 +413,11 @@ __constant
  unsigned int i;
  unsigned int lightsVisited;
 	for (i = 0, lightsVisited = 0; i < shapeCnt && lightsVisited < lightCnt; i++) {
-	
+#ifdef __ANDROID__
+__global
+#else
 __constant
-
+#endif
   const Shape *light = &shapes[i];
 
   if (!viszero(light->e)) {
@@ -491,9 +493,11 @@ __constant
 }
 
 void RadianceOnePathTracing(
-
+#ifdef __ANDROID__
+__global
+#else
 __constant
-
+#endif
  const Shape *shapes,
  const unsigned int shapeCnt, 
  const unsigned int lightCnt,
@@ -516,7 +520,7 @@ __constant
 #endif
  Ray *currentRay,
  unsigned int *seed0, unsigned int *seed1, 
- int depth, Vec *rad, Vec *throughput, int *specularBounce, int *terminated, 
+ Vec *rad, Vec *throughput, int *specularBounce, int *terminated, 
  Vec *result
 #ifdef DEBUG_INTERSECTIONS
  , __global int *debug1,
@@ -749,9 +753,11 @@ __constant
 }
 
 void RadiancePathTracing(
-
+#ifdef __ANDROID__
+__global
+#else
 __constant
-
+#endif
  const Shape *shapes,
  const unsigned int shapeCnt, 
  const unsigned int lightCnt,
@@ -800,7 +806,7 @@ __constant
 #elif (ACCELSTR == 2)
 		kng, kngCnt, kn, knCnt, 
 #endif
-		&currentRay, seed0, seed1, depth, &rad, &throughput, &specularBounce, &terminated, result
+		&currentRay, seed0, seed1, &rad, &throughput, &specularBounce, &terminated, result
 #ifdef DEBUG_INTERSECTIONS
 		, debug1, debug2
 #endif
@@ -814,9 +820,11 @@ __constant
 }
 
 void RadianceDirectLighting(
-
+#ifdef __ANDROID__
+__global
+#else
 __constant
-
+#endif
  const Shape *shapes,
  const unsigned int shapeCnt, 
  const unsigned int lightCnt,
@@ -851,6 +859,7 @@ __constant
 
  unsigned int depth = 0;
  int specularBounce = 1;
+ 
  for (;; ++depth) {
 
   if (depth > MAX_DEPTH) {
@@ -875,9 +884,11 @@ __constant
 
    return;
   }
-
+#ifdef __ANDROID__
+__global
+#else
 __constant
-
+#endif
   const Shape *obj = &shapes[id];
 
   Vec hitPoint;
@@ -1038,7 +1049,7 @@ void GenerateCameraRay(
  const float r2 = GetRandom(seed0, seed1) - .5f;
  const float kcx = (x + r1) * invWidth - .5f;
  const float kcy = (y + r2) * invHeight - .5f;
- 
+   
  Vec rdir;
   vinit(rdir,
  		camera->x.x * kcx + camera->y.x * kcy + camera->dir.x,
@@ -1061,7 +1072,12 @@ void GenerateCameraRay(
 __kernel void RadianceGPU(
     __global Vec *colors, __global unsigned int *seedsInput,
  __constant Camera *camera,
- __constant Shape *shapes, 
+#ifdef __ANDROID__
+__global
+#else
+__constant
+#endif
+ const Shape *shapes,
  const unsigned int shapeCnt,
  const unsigned int lightCnt, 
 #if (ACCELSTR == 1)
@@ -1129,7 +1145,12 @@ __kernel void RadianceGPU(
 
 __kernel void RadianceBoxGPU(
     __global Vec *colors, __global unsigned int *seedsInput,
- __constant Shape *shapes, 
+#ifdef __ANDROID__
+__global
+#else
+__constant
+#endif
+ const Shape *shapes,
  __constant Camera *camera,
  const unsigned int shapeCnt,
  const unsigned int lightCnt,
