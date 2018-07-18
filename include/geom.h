@@ -30,7 +30,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define FLOAT_PI 3.14159265358979323846f
 
 #define MAX_DEPTH 6
-#define MAX_SPP 6
+#define MAX_SPP 1
 
 #define ACCELSTR 1 //2 //0 is no accel, 1 is BVH and 2 is KDTREE
 //#define __ANDROID__
