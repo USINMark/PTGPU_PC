@@ -1116,7 +1116,7 @@ __kernel void FillPixel_exp(
   colors[i].z = (colors[i].z * k1 + results[i].z) * k2;
  }
 
- pixels[gid] = (((int)(pow(clamp(colors[i].x, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f))  << 16) |
+ pixels[gid] = (((int)(pow(clamp(colors[i].x, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f))) |
    (((int)(pow(clamp(colors[i].y, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f)) << 8) |
-   (((int)(pow(clamp(colors[i].z, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f))) | 0xff000000;
+   (((int)(pow(clamp(colors[i].z, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f)) << 16) | 0xff000000;
 }
