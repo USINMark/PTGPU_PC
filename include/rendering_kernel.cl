@@ -15,7 +15,7 @@ inline float GetRandom(unsigned int *seed0, unsigned int *seed1) {
 
  return (res.f - 2.f) / 2.f;
 }
-
+     
 inline void swap(float *a, float *b)
 {
 	float temp = *a;
@@ -1062,13 +1062,13 @@ void GenerateCameraRay(
  //{ float k = (0.1f); { (rorig).x = k * (rdir).x; (rorig).y = k * (rdir).y; (rorig).z = k * (rdir).z; } };
  vadd(rorig, rorig, camera->orig)
  //{ (rorig).x = (rorig).x + (camera->orig).x; (rorig).y = (rorig).y + (camera->orig).y; (rorig).z = (rorig).z + (camera->orig).z; }
-
+ 
  vnorm(rdir);
  //{ float l = 1.f / sqrt(((rdir).x * (rdir).x + (rdir).y * (rdir).y + (rdir).z * (rdir).z)); { float k = (l); { (rdir).x = k * (rdir).x; (rdir).y = k * (rdir).y; (rdir).z = k * (rdir).z; } }; };
  rinit(*ray, rorig, rdir);
  //{ { ((*ray).o).x = (rorig).x; ((*ray).o).y = (rorig).y; ((*ray).o).z = (rorig).z; }; { ((*ray).d).x = (rdir).x; ((*ray).d).y = (rdir).y; ((*ray).d).z = (rdir).z; }; };
 }
-  
+ 
 __kernel void RadianceGPU(
     __global Vec *colors, __global unsigned int *seedsInput,
  __constant Camera *camera,
@@ -1091,7 +1091,7 @@ __constant
 #endif
  const int width, const int height,
  const int currentSample,
- __global int *pixels
+ __global int *pixels	
 #ifdef DEBUG_INTERSECTIONS
  , __global int *debug1,
  __global float *debug2
@@ -1134,7 +1134,7 @@ __constant
   colors[i].y = (colors[i].y * k1 + r.y) * k2;
   colors[i].z = (colors[i].z * k1 + r.z) * k2;
  }
-
+ 
 #ifdef __ANDROID__
  pixels[y * width + x] = (toInt(colors[i].x)  << 16) |
    (toInt(colors[i].y) << 8) |
@@ -1142,7 +1142,7 @@ __constant
 #else
  pixels[y * width + x] = (toInt(colors[i].x)) |
    (toInt(colors[i].y) << 8) |
-   (toInt(colors[i].z)) << 16) | 0xff000000;
+   (toInt(colors[i].z) << 16) | 0xff000000;
 #endif   
 
  seedsInput[gid2] = seed0;

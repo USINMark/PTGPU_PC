@@ -1086,14 +1086,14 @@ __kernel void GenerateCameraRay_exp(
  rinit(rays[gid], rorig, rdir);
  //{ { ((*ray).o).x = (rorig).x; ((*ray).o).y = (rorig).y; ((*ray).o).z = (rorig).z; }; { ((*ray).d).x = (rdir).x; ((*ray).d).y = (rdir).y; ((*ray).d).z = (rdir).z; }; };
 }
-
+ 
 __kernel void FillPixel_exp(
    const int width, const int height,
    const int currentSample,
     __global Vec *colors, __global Vec *results, __global int *pixels
  ) {
     const int gid = get_global_id(0);
-	
+
  const int x = gid % width;
  const int y = gid / width;
  
@@ -1120,7 +1120,7 @@ __kernel void FillPixel_exp(
    (toInt(colors[i].y) << 8) |
    (toInt(colors[i].z)) | 0xff000000;
 #else
- pixels[gid] = (toInt(colors[i].x) * 255.f + .5f) |
+ pixels[gid] = (toInt(colors[i].x)) |
    (toInt(colors[i].y) << 8) |
    (toInt(colors[i].z) << 16) | 0xff000000;
 #endif   
