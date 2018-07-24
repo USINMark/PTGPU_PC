@@ -38,6 +38,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#define CPU_PARTRENDERING
 //#define DEBUG_INTERSECTIONS
 
+#ifdef EXP_KERNEL
+typedef struct {
+	int x, y;
+	Vec p;
+} Result;
+#endif
+
 typedef struct {
 	Vec o, d;
 } Ray;

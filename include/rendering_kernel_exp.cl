@@ -520,8 +520,8 @@ __constant
 #endif
  Ray *currentRay,
  __global unsigned int *seed0, __global unsigned int *seed1, 
- Vec *throughput, int *specularBounce, int *terminated, 
- Vec *result
+ __global Vec *throughput, __global int *specularBounce, __global int *terminated, 
+ __global Vec *result
 #ifdef DEBUG_INTERSECTIONS
  , __global int *debug1,
  __global float *debug2
@@ -777,10 +777,7 @@ __constant
  int *kn, 
  int knCnt, 
 #endif  
- __global Ray *rays, 
- __global unsigned int *seedsInput,
- __global Vec *throughput, __global int *specularBounce, __global int *terminated, 
- __global Vec *result
+ __global Ray *rays, __global unsigned int *seedsInput, __global Vec *throughput, __global int *specularBounce, __global int *terminated, __global Result *results
 #ifdef DEBUG_INTERSECTIONS
  , __global int *debug1,
  __global float *debug2
@@ -791,34 +788,26 @@ __constant
  const int x = gid % width;
  const int y = gid / width;
  
- const int sgid2 = gid << 1;
- 
- Vec thr = throughput[gid];
- int sb = specularBounce[gid];
- Ray aray = rays[gid];
- int ter = terminated[gid];
- Vec res = result[gid];
+ const int sgid2 = gid << 1; 
   
  if (terminated[gid] != 1)
  {
-	 RadianceOnePathTracing(shapes, shapeCnt, lightCnt, 
+	Ray aray = rays[gid];
+	
+	RadianceOnePathTracing(shapes, shapeCnt, lightCnt, 
 #if (ACCELSTR == 1)
 			btn, btl, 
 #elif (ACCELSTR == 2)
 			kng, kngCnt, kn, knCnt, 
 #endif
-			&aray, &seedsInput[sgid2], &seedsInput[sgid2+1], &thr, &sb, &ter, &res
+			&aray, &seedsInput[sgid2], &seedsInput[sgid2+1], &throughput[gid], &specularBounce[gid], &terminated[gid], &results[gid].p
 #ifdef DEBUG_INTERSECTIONS
 		, debug1, debug2
 #endif
 	);	
- } 
- 
- result[gid] = res;
- terminated[gid] = ter;
- rays[gid] = aray;  
- specularBounce[gid] = sb;
- throughput[gid] = thr;
+	
+	rays[gid] = aray;
+ }   
 }
 
 void RadianceDirectLighting(
@@ -848,7 +837,7 @@ __constant
  int knCnt, 
 #endif
  const Ray *startRay,
- __global unsigned int *seed0, __global unsigned int *seed1,
+ __global unsigned int *seed0, __global unsigned int *seed1, 
  Vec *result
 #ifdef DEBUG_INTERSECTIONS
  , __global int *debug1,
@@ -1040,13 +1029,12 @@ __constant
   }
  }
 }
- 
+
 __kernel void GenerateCameraRay_exp(
   __constant Camera *camera,  
   __global unsigned int *seedsInput,
   const int width, const int height, 
-  __global Ray *rays, 
-  __global Vec *throughput, __global int *specularBounce, __global int *terminated, __global Vec *result) {
+  __global Ray *rays, __global Vec *throughput, __global int *specularBounce, __global int *terminated, __global Result *results) {
  const int gid = get_global_id(0);
 
  const int x = gid % width;
@@ -1066,7 +1054,7 @@ __kernel void GenerateCameraRay_exp(
  throughput[gid].x = throughput[gid].y = throughput[gid].z = 1.f;
  specularBounce[gid] = 1;
  terminated[gid] = 0;
- result[gid].x = result[gid].y = result[gid].z = 0.f;
+ results[gid].x = x, results[gid].y = y, results[gid].p.x = results[gid].p.y = results[gid].p.z = 0.f;
  
  Vec rdir;
   vinit(rdir,
@@ -1086,16 +1074,15 @@ __kernel void GenerateCameraRay_exp(
  rinit(rays[gid], rorig, rdir);
  //{ { ((*ray).o).x = (rorig).x; ((*ray).o).y = (rorig).y; ((*ray).o).z = (rorig).z; }; { ((*ray).d).x = (rdir).x; ((*ray).d).y = (rdir).y; ((*ray).d).z = (rdir).z; }; };
 }
- 
+
 __kernel void FillPixel_exp(
-   const int width, const int height,
-   const int currentSample,
-    __global Vec *colors, __global Vec *results, __global int *pixels
+   const int width, const int height, const int currentSample,
+    __global Vec *colors, __global Result *results, __global int *pixels
  ) {
     const int gid = get_global_id(0);
-
- const int x = gid % width;
- const int y = gid / width;
+	
+ const int x = results[gid].x; //gid % width;
+ const int y = results[gid].y; //gid / width;
  
  const int sgid = (y - 1) * width + x;
  const int sgid2 = sgid << 1;
@@ -1103,25 +1090,23 @@ __kernel void FillPixel_exp(
  if (y >= height)
   return;  
  
- const int i = (y - 1) * width + x;
- 
  if (currentSample == 0) {
-  vassign(colors[i], results[i]);
-  //{ (colors[i]).x = (r).x; (colors[i]).y = (r).y; (colors[i]).z = (r).z; };
+  vassign(colors[sgid], results[sgid].p);
+  //{ (colors[sgid]).x = (r).x; (colors[sgid]).y = (r).y; (colors[sgid]).z = (r).z; };
  } else {
   const float k1 = currentSample;
   const float k2 = 1.f / (currentSample + 1.f);
-  colors[i].x = (colors[i].x * k1 + results[i].x) * k2;
-  colors[i].y = (colors[i].y * k1 + results[i].y) * k2;
-  colors[i].z = (colors[i].z * k1 + results[i].z) * k2;
+  colors[sgid].x = (colors[sgid].x * k1 + results[sgid].p.x) * k2;
+  colors[sgid].y = (colors[sgid].y * k1 + results[sgid].p.y) * k2;
+  colors[sgid].z = (colors[sgid].z * k1 + results[sgid].p.z) * k2;
  }
 #ifdef __ANDROID__
- pixels[gid] = (toInt(colors[i].x)  << 16) |
-   (toInt(colors[i].y) << 8) |
-   (toInt(colors[i].z)) | 0xff000000;
+ pixels[y * width + x] = (toInt(colors[sgid].x)  << 16) |
+   (toInt(colors[sgid].y) << 8) |
+   (toInt(colors[sgid].z)) | 0xff000000;
 #else
- pixels[gid] = (toInt(colors[i].x)) |
-   (toInt(colors[i].y) << 8) |
-   (toInt(colors[i].z) << 16) | 0xff000000;
+ pixels[y * width + x] = (toInt(colors[sgid].x)) |
+   (toInt(colors[sgid].y) << 8) |
+   (toInt(colors[sgid].z) << 16) | 0xff000000;
 #endif   
 }

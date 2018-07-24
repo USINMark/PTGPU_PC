@@ -23,7 +23,7 @@
     <ProjectGuid>{3EE44479-98FC-488A-A273-1743E29B611D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>PTGPUtest</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

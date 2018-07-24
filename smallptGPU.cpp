@@ -62,7 +62,8 @@ bool Read(char *fileName, bool *walllight);
 
 #ifdef EXP_KERNEL
 Ray *ray;
-Vec *throughput, *result;
+Vec *throughput;
+Result *result;
 int *specularBounce, *terminated;
 
 static cl_mem rayBuffer, throughputBuffer, specularBounceBuffer, terminatedBuffer, resultBuffer;
@@ -223,22 +224,22 @@ void AllocateBuffers() {
 
 	throughput = (Vec *)malloc(sizeof(Vec) * width * height);
 
-	throughputBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(Ray) *  width * height, NULL, &status);
+	throughputBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(Vec) *  width * height, NULL, &status);
 	clErrchk(status);
 
 	specularBounce = (int *)malloc(sizeof(int) * width * height);
 
-	specularBounceBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(Ray) *  width * height, NULL, &status);
+	specularBounceBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(int) *  width * height, NULL, &status);
 	clErrchk(status);
 
 	terminated = (int *)malloc(sizeof(int) * width * height);
 
-	terminatedBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(Ray) *  width * height, NULL, &status);
+	terminatedBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(int) *  width * height, NULL, &status);
 	clErrchk(status);
 
-	result = (Vec *)malloc(sizeof(Vec) * width * height);
+	result = (Result *)malloc(sizeof(Result) * width * height);
 
-	resultBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(Vec) *  width * height, NULL, &status);
+	resultBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(Result) *  width * height, NULL, &status);
 	clErrchk(status);	
 #endif
 }
@@ -883,11 +884,11 @@ unsigned int *DrawFrame()
 }
 #else
 #ifdef EXP_KERNEL
-void ExecuteKernel(cl_kernel p_kernel) {
+void ExecuteKernel(cl_kernel p_kernel, int cnt_kernel) {
 	/* Enqueue a kernel run call */
 	size_t globalThreads[1];
 
-	globalThreads[0] = width * height;
+	globalThreads[0] = cnt_kernel;
 
 	if (globalThreads[0] % workGroupSize != 0) globalThreads[0] = (globalThreads[0] / workGroupSize + 1) * workGroupSize;
 
@@ -915,7 +916,7 @@ void ExecuteKernel() {
 #endif
 
 unsigned int *DrawFrame() {
-	int len = pixelCount * sizeof(unsigned int), index = 0;
+	int len = pixelCount * sizeof(int), index = 0;
 	double startTime = WallClockTime(), setStartTime, kernelStartTime, readStartTime;
 	double setTotalTime = 0.0, kernelTotalTime = 0.0, readTotalTime = 0.0;
 	int startSampleCount = currentSample;
@@ -926,23 +927,20 @@ unsigned int *DrawFrame() {
 		index = 0;
 
 		/* Set kernel arguments */
-		setStartTime = WallClockTime();
 		clErrchk(clSetKernelArg(kernelGen, index++, sizeof(cl_mem), (void *)&cameraBuffer));
-        clErrchk(clSetKernelArg(kernelGen, index++, sizeof(cl_mem), (void *)&seedBuffer));
+		clErrchk(clSetKernelArg(kernelGen, index++, sizeof(cl_mem), (void *)&seedBuffer));
 		clErrchk(clSetKernelArg(kernelGen, index++, sizeof(int), (void *)&width));
 		clErrchk(clSetKernelArg(kernelGen, index++, sizeof(int), (void *)&height));
-        clErrchk(clSetKernelArg(kernelGen, index++, sizeof(cl_mem), (void *)&rayBuffer));
+		clErrchk(clSetKernelArg(kernelGen, index++, sizeof(cl_mem), (void *)&rayBuffer));
 		clErrchk(clSetKernelArg(kernelGen, index++, sizeof(cl_mem), (void *)&throughputBuffer));
 		clErrchk(clSetKernelArg(kernelGen, index++, sizeof(cl_mem), (void *)&specularBounceBuffer));
 		clErrchk(clSetKernelArg(kernelGen, index++, sizeof(cl_mem), (void *)&terminatedBuffer));
 		clErrchk(clSetKernelArg(kernelGen, index++, sizeof(cl_mem), (void *)&resultBuffer));
-		setTotalTime += (WallClockTime() - setStartTime);
 
-		kernelStartTime = WallClockTime();
-		ExecuteKernel(kernelGen);
-		clFinish(commandQueue);
-		kernelTotalTime += (WallClockTime() - kernelStartTime);
+		ExecuteKernel(kernelGen, width * height);
+		//clFinish(commandQueue);
 
+        int rayCnt = width * height;
 		for (int i = 0; i < MAX_DEPTH; i++)
 		{
 			index = 0;
@@ -971,15 +969,21 @@ unsigned int *DrawFrame() {
 			setTotalTime += (WallClockTime() - setStartTime);
 
 			kernelStartTime = WallClockTime();
-			ExecuteKernel(kernelRadiance);
+			ExecuteKernel(kernelRadiance, rayCnt);
 			//clFinish(commandQueue);
 			kernelTotalTime += (WallClockTime() - kernelStartTime);
-		}
+#if 0
+            rayCnt = 0;
+            for(int k = 0; k < width * height; k++)
+            {
+                if (terminated[k] == 0) rayCnt++;
+            }
+#endif
+        }
 
 		index = 0;
 
 		setStartTime = WallClockTime();
-
 		clErrchk(clSetKernelArg(kernelFill, index++, sizeof(int), (void *)&width));
 		clErrchk(clSetKernelArg(kernelFill, index++, sizeof(int), (void *)&height));
 		clErrchk(clSetKernelArg(kernelFill, index++, sizeof(int), (void *)&currentSample));
@@ -989,16 +993,19 @@ unsigned int *DrawFrame() {
 		setTotalTime += (WallClockTime() - setStartTime);
 
 		kernelStartTime = WallClockTime();
-		ExecuteKernel(kernelFill);
-		clFinish(commandQueue);
+		ExecuteKernel(kernelFill, width * height);
+		//clFinish(commandQueue);
 		kernelTotalTime += (WallClockTime() - kernelStartTime);
 	}
-	readStartTime = WallClockTime();
+	
 	//--------------------------------------------------------------------------
 	/* Enqueue readBuffer */
+	readStartTime = WallClockTime();
 	clErrchk(clEnqueueReadBuffer(commandQueue, pixelBuffer, CL_TRUE, 0, len, pixels, 0, NULL, NULL));
 	//clFinish(commandQueue);
 	readTotalTime += (WallClockTime() - readStartTime);
+
+    currentSample += MAX_SPP;
 #else
 	setStartTime = WallClockTime();
 
@@ -1103,9 +1110,9 @@ unsigned int *DrawFrame() {
 
 	clErrchk(clReleaseMemObject(debugBuffer1));
 	free(debug1);
-#endif    
 #endif
-	currentSample++;
+    currentSample++;
+#endif
 
 	/*------------------------------------------------------------------------*/
 	const double elapsedTime = WallClockTime() - startTime;
